@@ -6,11 +6,10 @@ body {
     background-color: #f8f9fa; /* Light background */
     color: #343a40; /* Dark text */
 }
-h2 {
-    color: #007bff; /* Primary color for main headers */
-    border-bottom: 2px solid #e9ecef;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1.5rem;
+h3 {
+    color: #495057;
+    margin-top: 0.5rem; 
+    margin-bottom: 1rem;
 }
 h3 {
     color: #495057;
@@ -249,6 +248,14 @@ table a:hover {
 .auth-container a:hover {
     text-decoration: underline;
 }
+/* auth-container 안에 있는 select 요소에 적용 */
+.auth-container select[name="selected_role"] {
+    /* select 요소를 블록처럼 보이게 하여 새 줄에서 시작하도록 합니다. */
+    display: block; 
+    
+    /* 위쪽에 5픽셀의 여백(간격)을 추가합니다. 필요에 따라 값(예: 10px)을 조절하세요. */
+    margin-top: 10px; 
+}
 
 /* Fix for existing inline styles */
 span[style*="font-weight: bold;"] {
@@ -391,4 +398,13 @@ table.user-list-table td:nth-child(4) {
 
 .status-rejected {
     color: red; /* REJECTED 상태 */
+}
+
+/* Admin Dashboard Status Colors */
+.status-ok {
+    color: green; /* 0건일 때 */
+}
+
+.status-critical {
+    color: orange; /* 1건 이상일 때 (경고) */
 }

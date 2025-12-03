@@ -24,12 +24,12 @@
     </div>
 
     {% if roles and username %}
-        <p>Welcome back, <strong>{{ username }}</strong>. Please select a role to proceed:</p>
+        <p>Welcome back, <strong>{{ username }}</strong>.<br>Please select a role to proceed</p>
         <form action="{{ url_for('login') }}" method="post">
             <input type="hidden" name="username" value="{{ username }}"> 
             
             <div>
-                <label>Login As:
+                <label>Login As
                     <select name="selected_role" required>
                         {% for role in roles %}
                             <option value="{{ role }}">{{ role.capitalize() }}</option>
@@ -57,10 +57,10 @@
                 <button type="submit">Login</button>
             </div>
         </form>
+        <hr>
+        <p>Not a member yet? <a href="{{ url_for('register') }}">Go to Register</a></p>
     {% endif %}
 
-    <hr>
-    <p>Not a member yet? <a href="{{ url_for('register') }}">Go to Register</a></p>
 </div>
 </body>
 </html>

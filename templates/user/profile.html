@@ -60,16 +60,39 @@
 <hr>
 
 <h3>Current Profile</h3>
-<p>Username: {{ user.username }}</p>
-<p>Student ID: {{ user.student_id or "-" }}</p>
-<p>Name: {{ user.real_name or "-" }}</p>
-<p>Riot ID: {{ user.summoner_riot_id or "-" }}</p>
-<p>Primary Role: {{ user.primary_role or "-" }}</p>
-<p>Secondary Role 1: {{ user.secondary_role1 or "-" }}</p>
-<p>Secondary Role 2: {{ user.secondary_role2 or "-" }}</p>
-<p>Solo Tier: {{ user.solo_tier or "No data" }}</p>
-<p>Flex Tier: {{ user.flex_tier or "No data" }}</p>
-<p>Estimated Score: {{ calculate_estimated_score(user) or "No score (unranked)" }}</p>
-<p>Actual Score (set by admin): {{ user.actual_score if user.actual_score is not none else "Not set" }}</p>
+<table border="1" cellpadding="5" style="max-width: 500px;">
+    <tr>
+        <th>Student ID</th>
+        <td>{{ user.student_id or "-" }}</td>
+    </tr>
+    <tr>
+        <th>Name</th>
+        <td>{{ user.real_name or "-" }}</td>
+    </tr>
+    <tr>
+        <th>Riot ID</th>
+        <td>{{ user.summoner_riot_id or "-" }}</td>
+    </tr>
+    <tr>
+        <th>Primary Role</th>
+        <td>{{ user.primary_role or "-" }}</td>
+    </tr>
+    <tr>
+        <th>Secondary Role 1</th>
+        <td>{{ user.secondary_role1 or "-" }}</td>
+    </tr>
+    <tr>
+        <th>Secondary Role 2</th>
+        <td>{{ user.secondary_role2 or "-" }}</td>
+    </tr>
+    <tr>
+        <th>Solo Tier</th>
+        <td>{{ user.solo_tier or "-" }}</td>
+    </tr>
+    <tr>
+        <th>Flex Tier</th>
+        <td>{{ user.flex_tier or "-" }}</td>
+    </tr>
+</table>
 
 {% endblock %}

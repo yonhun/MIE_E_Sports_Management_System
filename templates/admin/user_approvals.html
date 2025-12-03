@@ -3,12 +3,12 @@
 <h2>User Account Approval</h2>
 <hr>
 
-<h3>Pending Users ({{ pending_users | length }})</h3>
+<h3>Pending Users</h3>
 {% if pending_users | length > 0 %}
 <table border="1" cellpadding="5">
     <tr>
-        <th>ID</th>
-        <th>Username</th>
+        <th>User No.</th>
+        <th>User ID</th>
         <th>Requested Role</th>
         <th>Action</th>
     </tr>
@@ -34,20 +34,31 @@
 
 <hr>
 
-<h3>Rejected Users ({{ rejected_users | length }})</h3>
+<h3>Rejected Users</h3>
 {% if rejected_users | length > 0 %}
-<ul>
+<table border="1" cellpadding="5">
+    <tr>
+        <th>User No.</th>
+        <th>User ID</th>
+        <th>Requested Role</th>
+        <th>Action</th>
+    </tr>
     {% for u in rejected_users %}
-        <li>{{ u.username }} (ID: {{ u.id }}, Roles: {{ u.role }}) 
+    <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.username }}</td>
+        <td>{{ u.role }}</td>
+        <td>
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='approve') }}" style="display:inline;">
-                <button type="submit">Re-Approve</button>
+                <button type="submit">Approve</button>
             </form>
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='delete') }}" style="display:inline;">
-                <button type="submit" class="btn-delete">Permanent Delete</button>
+                <button type="submit" class="btn-delete">Delete</button>
             </form>
-        </li>
+        </td>
+    </tr>
     {% endfor %}
-</ul>
+</table>
 {% else %}
 <p>No users are currently rejected.</p>
 {% endif %}

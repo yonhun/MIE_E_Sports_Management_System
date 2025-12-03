@@ -1,19 +1,38 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Dashboard</h2>
+<h2>Admin Dashboard</h2>
 <hr>
 
-{# <h3>📊 System Overview (Data requires fetching in app.py)</h3>
-<p>Total Registered Users: {{ total_users_count or "-" }}</p>
-<p style="color: orange;">
-    <a href="{{ url_for('admin_user_approvals') }}">Pending User Approvals</a>: <strong>{{ pending_users_count or "-" }}</strong>
-</p>
-<hr> #}
+{# 📊 System Overview 섹션을 활성화하고 표로 변경 #}
+<h3>📊 System Overview</h3>
+<table border="1" cellpadding="5" style="max-width: 500px; margin-bottom: 1.5rem;">
+    <tr>
+        <th>Metric</th>
+        <th>Value</th>
+        <th>Action Link</th>
+    </tr>
+    <tr>
+        <td>Total Registered Users</td>
+        <td><strong>{{ total_users_count or "-" }}</strong></td>
+        <td>-</td>
+    </tr>
+    <tr>
+        <td>Pending User Approvals</td>
+        <td>
+            {# FIX: 클래스 바인딩으로 변경 #}
+            {% set pending_class = 'status-critical' if pending_users_count > 0 else 'status-ok' %}
+            <strong class="{{ pending_class }}">
+                {{ pending_users_count or "0" }}
+            </strong>
+        </td>
+        <td><a href="{{ url_for('admin_user_approvals') }}">Review Accounts</a></td>
+    </tr>
+</table>
 
 
 {% if tournament %}
     <h3>🏆 Current Tournament: {{ tournament.name }}</h3>
-    <p>Status: <span style="font-weight: bold;">{{ tournament.status }}</span> (Stage: {{ tournament.current_stage or "-" }})</p>
+    <p>Status: <span style="font-weight: bold;">{{ tournament.status }}</span></p>
     
     <table border="1" cellpadding="5" style="max-width: 500px;">
         <tr>
@@ -31,7 +50,6 @@
             <td><strong>{{ approved }}</strong></td>
             <td></td>
         </tr>
-        {# Placeholder for Teams/Matches data - requires app.py update #}
         <tr>
             <td>Total Teams Formed</td>
             <td>{{ total_teams_count or "-" }}</td>
@@ -39,7 +57,13 @@
         </tr>
         <tr>
             <td>Pending Matches</td>
-            <td>{{ pending_matches_count or "-" }}</td>
+            <td>
+                {# FIX: 클래스 바인딩으로 변경 #}
+                {% set matches_class = 'status-critical' if pending_matches_count > 0 else 'status-ok' %}
+                <strong class="{{ matches_class }}">
+                    {{ pending_matches_count or "-" }}
+                </strong>
+            </td>
             <td><a href="{{ url_for('admin_tournament') }}">View Schedule</a></td>
         </tr>
     </table>

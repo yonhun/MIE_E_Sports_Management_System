@@ -1072,9 +1072,18 @@ def team_detail(team_id):
 @app.route("/admin/dashboard")
 @login_required(role="ADMIN")
 def admin_dashboard():
+    # 1. 시스템 전체 사용자 및 승인 대기 사용자 수 계산
+    total_users_count = User.query.count()
+    pending_users_count = User.query.filter_by(approval_status="PENDING").count()
+
     tournament = Tournament.query.first()
     total_applications = 0
     approved = 0
+    
+    # 템플릿에서 오류가 나지 않도록 기본값 초기화
+    total_teams_count = 0
+    pending_matches_count = 0
+    
     if tournament:
         total_applications = Participant.query.filter_by(
             tournament_id=tournament.id
@@ -1082,12 +1091,24 @@ def admin_dashboard():
         approved = Participant.query.filter_by(
             tournament_id=tournament.id, status="APPROVED"
         ).count()
+        
+        # 2. 현재 토너먼트의 팀 및 매치 수 계산
+        total_teams_count = Team.query.filter_by(tournament_id=tournament.id).count()
+        pending_matches_count = Match.query.filter_by(
+            tournament_id=tournament.id, status="SCHEDULED"
+        ).count()
 
     return render_template(
         "admin/dashboard.html",
         tournament=tournament,
         total_applications=total_applications,
         approved=approved,
+        # 추가된 시스템 개요 변수
+        total_users_count=total_users_count,
+        pending_users_count=pending_users_count,
+        # 토너먼트 상태 테이블 변수
+        total_teams_count=total_teams_count,
+        pending_matches_count=pending_matches_count,
     )
 
 
