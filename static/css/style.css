@@ -67,6 +67,18 @@ nav ul li a:hover {
     color: #007bff;
 }
 
+/* 추가: 로그아웃 링크를 ul/li 구조로 변경했으므로, nav 하위의 일반 링크에 대한 보라색 방지 */
+/* 'logout-link' 클래스를 사용하여 명시적으로 색상 재정의 */
+nav a.logout-link {
+    color: #495057; /* 기본 메뉴 색상 */
+    font-weight: 600; /* 강조 */
+}
+
+nav a.logout-link:hover {
+    color: #dc3545; /* 로그아웃은 빨간색으로 시각적 차별화 (선택사항) */
+    background-color: #f8d7da;
+}
+
 /* 4. Form/Button Styling */
 form div {
     margin-bottom: 1rem;
@@ -104,10 +116,19 @@ button:hover, input[type="submit"]:hover {
     background-color: #0056b3;
 }
 /* Secondary actions like Reject/Delete */
-button[formaction*="reject"], button[formaction*="delete"] {
-    background-color: #dc3545;
+/* 기존 formaction 기반 스타일 유지 (참가자 관리 페이지) */
+button[formaction*="reject"], 
+button[formaction*="delete"],
+/* 새로 추가: user_approvals 페이지를 위한 클래스 */
+button.btn-reject,
+button.btn-delete {
+    background-color: #dc3545; /* 빨간색 계열 */
 }
-button[formaction*="reject"]:hover, button[formaction*="delete"]:hover {
+/* 호버 스타일도 클래스 포함 */
+button[formaction*="reject"]:hover, 
+button[formaction*="delete"]:hover,
+button.btn-reject:hover,
+button.btn-delete:hover {
     background-color: #c82333;
 }
 /* Inline form button alignment */
@@ -185,6 +206,17 @@ table a:hover {
     color: #198754;
     font-size: 1.5rem;
 }
+/* 코드/static/css/style.css 파일의 7. Special Boxes 섹션에 추가 */
+.finished-box a {
+    color: #007bff; /* 기본 링크 색상을 파란색으로 고정 */
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.finished-box a:hover {
+    color: #0056b3;
+    text-decoration: underline;
+}
 
 /* 8. Authentication Pages (Login/Register) - NEW STYLES */
 .auth-container {
@@ -202,6 +234,10 @@ table a:hover {
     padding-bottom: 0;
     margin-bottom: 1.5rem;
 }
+.auth-container h2.auth-header {
+    /* 이 스타일을 추가하여 텍스트를 모두 대문자로 변환합니다. */
+    text-transform: uppercase;
+}
 .auth-container input, .auth-container select {
     max-width: 100%; /* 컨테이너 너비를 채우도록 */
 }
@@ -216,4 +252,129 @@ table a:hover {
 /* Fix for existing inline styles */
 span[style*="font-weight: bold;"] {
     font-weight: 600 !important;
+}
+
+/* 사용자 권한 관리 테이블의 너비 고정을 위한 스타일 */
+table.user-list-table {
+    /* 테이블 레이아웃을 고정하여 내용 길이와 상관없이 너비가 일정하게 유지됩니다. */
+    table-layout: fixed; 
+    width: 100%;
+}
+
+/* 1번째 컬럼 (ID/승인 번호) 너비 지정 */
+table.user-list-table th:nth-child(1), 
+table.user-list-table td:nth-child(1) {
+    width: 8%; 
+}
+
+/* 3번째 컬럼 (Name) 너비 지정 (Username과 Name의 순서가 바뀌었습니다.) */
+table.user-list-table th:nth-child(3), 
+table.user-list-table td:nth-child(3) {
+    width: 20%; 
+}
+
+/* 4번째 컬럼 (Roles) 너비 지정 */
+table.user-list-table th:nth-child(4), 
+table.user-list-table td:nth-child(4) {
+    width: 15%; 
+}
+
+/* 2번째 컬럼 (Username)은 나머지 공간(57%)을 자동으로 차지합니다. */
+
+/* 코드/static/css/style.css 파일의 맨 끝에 추가 */
+
+/* Tournament Bracket Visualization */
+.bracket-container {
+    display: flex;
+    overflow-x: auto; 
+    padding: 1rem 0;
+    margin-bottom: 2rem;
+    background-color: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.bracket-round {
+    display: flex;
+    flex-direction: column;
+    /* FIX 1: 라운드 제목을 상단에 고정 */
+    justify-content: flex-start; 
+    
+    /* FIX 3: 라운드 수에 따라 컬럼 너비를 균등 분배 */
+    flex-grow: 1;
+    flex-basis: 0; 
+    min-width: 180px; 
+    
+    padding: 10px;
+    border-right: 1px dashed #ccc;
+}
+
+.bracket-round:last-child {
+    border-right: none;
+}
+
+/* FIX 2: 매치 그룹을 중앙 정렬하기 위한 새로운 Wrapper 스타일 */
+.match-group-wrapper {
+    flex-grow: 1; /* 남은 수직 공간을 모두 차지 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* 매치들을 수직 중앙 정렬 */
+    width: 100%; 
+}
+
+.bracket-round h4 {
+    text-align: center;
+    margin-top: 0; 
+    margin-bottom: 20px;
+    flex-shrink: 0; /* 제목이 줄어들지 않도록 방지 */
+    font-size: 1.1rem;
+    color: #007bff;
+}
+
+.bracket-match {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 25px; /* 매치 간 간격 */
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    min-height: 50px;
+}
+
+.match-team {
+    padding: 5px 8px;
+    font-size: 0.9rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.match-team:first-child {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.match-team.winner {
+    font-weight: 600;
+    background-color: #d4edda; /* Light green for winner */
+}
+
+/* 스코어 색상 정의 */
+
+/* 1. 승리팀 스코어: 파란색 */
+.match-team.winner .score {
+    color: #007bff; /* 파란색 */
+    font-weight: 700;
+}
+
+/* 2. 패배팀 스코어: 빨간색 */
+.match-team.loser .score {
+    color: #dc3545; /* 빨간색 */
+    font-weight: 700;
+}
+
+.match-team .score {
+    font-weight: 700;
+    margin-left: 10px;
 }

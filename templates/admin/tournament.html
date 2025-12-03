@@ -38,7 +38,7 @@
 
 <hr>
 
-{# --- [추가된 기능]: FINISHED 상태일 때 우승팀 표시 --- #}
+{# --- FINISHED 상태일 때 우승팀 표시 --- #}
 {% if tournament.status == "FINISHED" %}
     <div class="finished-box">
         <h3>🏆 Tournament Finished!</h3>
@@ -90,6 +90,57 @@
 
 
 <h3>Matches</h3>
+
+{% if tournament.type == "KNOCKOUT" and matches %}
+    {# ------------------ [KNOCKOUT 브래킷 시각화] ------------------ #}
+    <div style="margin-top: 1.5rem;">
+        <h4>Knockout Bracket Visualization</h4>
+        
+        {# 매치 목록을 round_no 기준으로 그룹화합니다. #}
+        {% set rounds = matches | groupby('round_no') | list %}
+        
+        {# 마지막 라운드 번호를 계산합니다. #}
+        {% set max_round_no = rounds[-1][0] if rounds else 0 %}
+        
+        <div class="bracket-container">
+            {% for round_no, round_matches in rounds %}
+            <div class="bracket-round">
+                <h4>
+                    {% if round_no == max_round_no %}
+                        Final
+                    {% else %}
+                        Round {{ round_no }}
+                    {% endif %}
+                </h4>
+                
+                <div class="match-group-wrapper"> {% for m in round_matches %}
+                    {% set team1_is_winner = m.winner_team_id == m.team1_id %}
+                    {% set team2_is_winner = m.winner_team_id == m.team2_id %}
+                    
+                    <div class="bracket-match">
+                        <div class="match-team {% if team1_is_winner %}winner{% elif m.status == "DONE" and not team1_is_winner %}loser{% endif %}">
+                            <span>{{ m.team1.name }}</span>
+                            {% if m.status == "DONE" %}
+                            <span class="score">{{ m.team1_score }}</span>
+                            {% endif %}
+                        </div>
+                        <div class="match-team {% if team2_is_winner %}winner{% elif m.status == "DONE" and not team2_is_winner %}loser{% endif %}">
+                            <span>{{ m.team2.name }}</span>
+                            {% if m.status == "DONE" %}
+                            <span class="score">{{ m.team2_score }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+                </div> </div>
+            {% endfor %}
+        </div>
+        <hr>
+    </div>
+    {# ------------------ [END KNOCKOUT 브래킷 시각화] ------------------ #}
+{% endif %}
+
+
 {% if matches %}
 <table border="1" cellpadding="4">
     <tr>
@@ -105,7 +156,13 @@
     {% for m in matches %}
         <tr>
             <td>{{ m.stage }}</td>
-            <td>{{ m.round_no }}</td>
+            <td>
+                {% if m.round_no == max_round_no %}
+                    Final
+                {% else %}
+                    {{ m.round_no }}
+                {% endif %}
+            </td>
             <td>{{ m.match_no }}</td>
             <td><a href="{{ url_for('team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
             <td><a href="{{ url_for('team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>

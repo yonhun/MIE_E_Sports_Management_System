@@ -10,10 +10,9 @@
     <label>Select user to make ADMIN:
         <select name="user_id">
             {% for u in users %}
-                {# 🚨 수정: 쉼표로 구분된 역할 문자열을 리스트로 분리 후, 'ADMIN'이 없는지 확인합니다. #}
                 {% set user_roles = u.role.split(',') | map('trim') | list %}
                 {% if 'ADMIN' not in user_roles %}
-                    <option value="{{ u.id }}">{{ u.username }} ({{ u.role }})</option>
+                    <option value="{{ u.id }}">{{ u.username }} ({{ u.real_name or '-' }})</option>
                 {% endif %}
             {% endfor %}
         </select>
@@ -23,29 +22,49 @@
 
 <hr>
 
-{# -------------------- 2. 현재 관리자 목록 출력 -------------------- #}
+{# -------------------- 2. 현재 관리자 목록 테이블 출력 -------------------- #}
 <h3>Current Admins</h3> 
-<ul>
+<table class="user-list-table" border="1" cellpadding="5">
+    <tr>
+        <th>User No.</th> {# <-- ID 컬럼명 변경 #}
+        <th>User ID</th> {# <-- Name 컬럼과 순서 변경 #}
+        <th>Name</th>     {# <-- Username 컬럼과 순서 변경 #}
+        <th>Roles</th>
+    </tr>
     {% for u in users %}
-        {# 🚨 수정: 쉼표로 구분된 역할 문자열을 리스트로 분리 후, 'ADMIN'이 포함되어 있는지 확인합니다. #}
         {% set user_roles = u.role.split(',') | map('trim') | list %}
         {% if 'ADMIN' in user_roles %}
-            <li><strong>{{ u.username }}</strong> (ID: {{ u.id }}, Roles: {{ u.role }})</li>
+            <tr>
+                <td>{{ u.id }}</td>
+                <td><strong>{{ u.username }}</strong></td> {# <-- Name 보다 먼저 배치 #}
+                <td>{{ u.real_name or '-' }}</td>          {# <-- Username 다음에 배치 #}
+                <td>{{ u.role }}</td>
+            </tr>
         {% endif %}
     {% endfor %}
-</ul>
+</table>
 
 <hr>
 
-{# -------------------- 3. 일반 사용자 목록 출력 -------------------- #}
+{# -------------------- 3. 일반 사용자 목록 테이블 출력 -------------------- #}
 <h3>General Users (Non-Admins)</h3>
-<ul>
+<table class="user-list-table" border="1" cellpadding="5">
+    <tr>
+        <th>User No.</th> {# <-- ID 컬럼명 변경 #}
+        <th>User ID</th> {# <-- Name 컬럼과 순서 변경 #}
+        <th>Name</th>     {# <-- Username 컬럼과 순서 변경 #}
+        <th>Roles</th>
+    </tr>
     {% for u in users %}
-        {# 🚨 수정: 쉼표로 구분된 역할 문자열을 리스트로 분리 후, 'ADMIN'이 없는지 확인합니다. #}
         {% set user_roles = u.role.split(',') | map('trim') | list %}
         {% if 'ADMIN' not in user_roles %}
-            <li>{{ u.username }} (ID: {{ u.id }}, Roles: {{ u.role }})</li>
+            <tr>
+                <td>{{ u.id }}</td>
+                <td>{{ u.username }}</td> {# <-- Name 보다 먼저 배치 #}
+                <td>{{ u.real_name or '-' }}</td>          {# <-- Username 다음에 배치 #}
+                <td>{{ u.role }}</td>
+            </tr>
         {% endif %}
     {% endfor %}
-</ul>
+</table>
 {% endblock %}

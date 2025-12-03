@@ -22,7 +22,7 @@
                 <button type="submit">Approve</button>
             </form>
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='reject') }}" style="display:inline;">
-                <button type="submit">Reject</button> 
+                <button type="submit" class="btn-reject">Reject</button> 
             </form>
         </td>
     </tr>
@@ -42,9 +42,8 @@
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='approve') }}" style="display:inline;">
                 <button type="submit">Re-Approve</button>
             </form>
-            {# 관리자가 수동으로 즉시 삭제할 수 있는 옵션 #}
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='delete') }}" style="display:inline;">
-                <button type="submit">Permanent Delete</button>
+                <button type="submit" class="btn-delete">Permanent Delete</button>
             </form>
         </li>
     {% endfor %}

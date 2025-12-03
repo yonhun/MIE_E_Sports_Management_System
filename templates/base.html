@@ -9,7 +9,7 @@
 <div class="page-container">
     <nav>
         {% if session.get('role') == "USER" %}
-            <h4>User Menu</h4>
+            <h4>Menu</h4>
             <ul>
                 <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
                 <li><a href="{{ url_for('user_profile') }}">Profile</a></li>
@@ -19,7 +19,7 @@
                 <li><a href="{{ url_for('user_tournament_status') }}">Tournament Status</a></li>
             </ul>
         {% elif session.get('role') == "ADMIN" %}
-            <h4>Admin Menu</h4>
+            <h4>Menu</h4>
             <ul>
                 <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
                 <li><a href="{{ url_for('admin_participants') }}">Participants</a></li>
@@ -32,7 +32,9 @@
 
         <hr>
         {% if session.get('user_id') %}
-            <a href="{{ url_for('logout') }}">Logout</a>
+        <ul>
+            <li><a href="{{ url_for('logout') }}" class="logout-link">LOGOUT</a></li>
+        </ul>
         {% endif %}
     </nav>
 
