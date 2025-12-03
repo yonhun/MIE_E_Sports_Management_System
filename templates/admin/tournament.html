@@ -40,7 +40,7 @@
 
 {# --- [추가된 기능]: FINISHED 상태일 때 우승팀 표시 --- #}
 {% if tournament.status == "FINISHED" %}
-    <div style="padding: 15px; border: 2px solid green; background-color: #e6ffe6; margin-bottom: 20px;">
+    <div class="finished-box">
         <h3>🏆 Tournament Finished!</h3>
         {% if winner_team %}
             <p style="font-size: 1.2em; font-weight: bold;">Winner: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>

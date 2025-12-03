@@ -1,0 +1,219 @@
+/* 1. Basic Reset and Typography */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9fa; /* Light background */
+    color: #343a40; /* Dark text */
+}
+h2 {
+    color: #007bff; /* Primary color for main headers */
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+h3 {
+    color: #495057;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
+hr {
+    border: none;
+    border-top: 1px solid #e9ecef;
+    margin: 1.5rem 0;
+}
+
+/* 2. Main Layout (Flexbox) - For pages inheriting base.html */
+.page-container {
+    display: flex;
+    min-height: 100vh;
+}
+nav {
+    width: 250px;
+    background-color: #ffffff; /* White sidebar */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    flex-shrink: 0; /* Prevents shrinking */
+}
+main {
+    flex: 1;
+    padding: 2rem;
+}
+
+/* 3. Navigation Styling */
+nav h4 {
+    color: #343a40;
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin-bottom: 2rem;
+}
+nav ul li a {
+    display: block;
+    padding: 0.5rem 0.75rem;
+    text-decoration: none;
+    color: #495057;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+}
+nav ul li a:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+}
+
+/* 4. Form/Button Styling */
+form div {
+    margin-bottom: 1rem;
+}
+label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+}
+input[type="text"], input[type="password"], input[type="number"], select {
+    width: 100%;
+    max-width: 300px;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    outline: none;
+}
+button, input[type="submit"] {
+    background-color: #007bff;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+button:hover, input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+/* Secondary actions like Reject/Delete */
+button[formaction*="reject"], button[formaction*="delete"] {
+    background-color: #dc3545;
+}
+button[formaction*="reject"]:hover, button[formaction*="delete"]:hover {
+    background-color: #c82333;
+}
+/* Inline form button alignment */
+form[style*="display:inline"] button {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+}
+
+/* 5. Table Styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1.5rem;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    overflow: hidden;
+}
+table th, table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #dee2e6;
+}
+table th {
+    background-color: #e9ecef;
+    color: #495057;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+table tr:last-child td {
+    border-bottom: none;
+}
+/* Subtle stripe effect */
+table tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+table a {
+    color: #007bff;
+    text-decoration: none;
+}
+table a:hover {
+    text-decoration: underline;
+}
+
+/* 6. Flash Messages */
+.flash-messages ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.flash-messages li {
+    background-color: #fff3cd; /* Yellow for warnings/info */
+    color: #856404;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ffeeba;
+    border-radius: 4px;
+}
+.flash-messages li:first-letter {
+    text-transform: uppercase;
+}
+
+/* 7. Special Boxes (e.g., Winner box) */
+.finished-box {
+    padding: 20px;
+    border: 2px solid #198754; /* Green border */
+    background-color: #e6ffe6; /* Light green background */
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+.finished-box h3 {
+    margin-top: 0;
+    color: #198754;
+    font-size: 1.5rem;
+}
+
+/* 8. Authentication Pages (Login/Register) - NEW STYLES */
+.auth-container {
+    max-width: 400px;
+    margin: 10vh auto 0 auto; /* 상단에서 10% 떨어진 위치에 중앙 정렬 */
+    padding: 2rem;
+    background-color: #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+.auth-container h2 {
+    text-align: center;
+    color: #007bff;
+    border-bottom: none;
+    padding-bottom: 0;
+    margin-bottom: 1.5rem;
+}
+.auth-container input, .auth-container select {
+    max-width: 100%; /* 컨테이너 너비를 채우도록 */
+}
+.auth-container a {
+    color: #007bff;
+    text-decoration: none;
+}
+.auth-container a:hover {
+    text-decoration: underline;
+}
+
+/* Fix for existing inline styles */
+span[style*="font-weight: bold;"] {
+    font-weight: 600 !important;
+}

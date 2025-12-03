@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>{{ title or "Tournament System" }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-<div style="display: flex; min-height: 100vh;">
-    <nav style="width: 200px; border-right: 1px solid #ccc; padding: 1rem;">
+<div class="page-container">
+    <nav>
         {% if session.get('role') == "USER" %}
             <h4>User Menu</h4>
             <ul>
@@ -35,7 +36,8 @@
         {% endif %}
     </nav>
 
-    <main style="flex: 1; padding: 1rem;">
+    <main>
+        <div class="flash-messages">
         {% with messages = get_flashed_messages() %}
             {% if messages %}
                 <ul>
@@ -45,6 +47,7 @@
                 </ul>
             {% endif %}
         {% endwith %}
+        </div>
 
         {% block content %}{% endblock %}
     </main>
