@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Register - Tournament System</title>
+</head>
+<body>
+<h2>Register</h2>
+
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <ul>
+            {% for msg in messages %}
+                <li>{{ msg }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endwith %}
+
+<form action="{{ url_for('register') }}" method="post">
+    <div>
+        <label>Username:
+            <input type="text" name="username">
+        </label>
+    </div>
+    <div>
+        <label>Password:
+            <input type="password" name="password">
+        </label>
+    </div>
+    
+    <div>
+        <label>Initial Role:
+            <select name="initial_role">
+                <option value="USER" selected>User (Participant)</option>
+                <option value="ADMIN">Admin (Site Manager)</option>
+            </select>
+        </label>
+    </div>
+    <div>
+        <button type="submit">Register</button>
+    </div>
+</form>
+
+<hr>
+<a href="{{ url_for('login_page') }}">Back to Login</a>
+
+</body>
+</html>

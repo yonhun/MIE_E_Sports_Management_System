@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ title or "Tournament System" }}</title>
+</head>
+<body>
+<div style="display: flex; min-height: 100vh;">
+    <nav style="width: 200px; border-right: 1px solid #ccc; padding: 1rem;">
+        {% if session.get('role') == "USER" %}
+            <h4>User Menu</h4>
+            <ul>
+                <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('user_profile') }}">Profile</a></li>
+                <li><a href="{{ url_for('user_apply') }}">Apply</a></li>
+                <li><a href="{{ url_for('user_team') }}">Team</a></li>
+                <li><a href="{{ url_for('user_matches') }}">Matches</a></li>
+                <li><a href="{{ url_for('user_tournament_status') }}">Tournament Status</a></li>
+            </ul>
+        {% elif session.get('role') == "ADMIN" %}
+            <h4>Admin Menu</h4>
+            <ul>
+                <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('admin_participants') }}">Participants</a></li>
+                <li><a href="{{ url_for('admin_teams') }}">Teams</a></li>
+                <li><a href="{{ url_for('admin_tournament') }}">Tournament</a></li>
+                <li><a href="{{ url_for('admin_permissions') }}">Permissions</a></li>
+                <li><a href="{{ url_for('admin_user_approvals') }}">User Approvals</a></li>
+            </ul>
+        {% endif %}
+
+        <hr>
+        {% if session.get('user_id') %}
+            <a href="{{ url_for('logout') }}">Logout</a>
+        {% endif %}
+    </nav>
+
+    <main style="flex: 1; padding: 1rem;">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul>
+                    {% for msg in messages %}
+                        <li>{{ msg }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+</body>
+</html>

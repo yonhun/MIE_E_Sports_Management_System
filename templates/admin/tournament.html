@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Tournament Management</h2>
+
+<form action="{{ url_for('admin_tournament') }}" method="post">
+    <div>
+        <label>Tournament Name:
+            <input type="text" value="{{ tournament.name }}" disabled>
+        </label>
+    </div>
+    <div>
+        <label>Type:
+            <select name="type">
+                <option value="KNOCKOUT" {% if tournament.type == "KNOCKOUT" %}selected{% endif %}>Knockout (Playoff)</option>
+                <option value="LEAGUE" {% if tournament.type == "LEAGUE" %}selected{% endif %}>League (Round Robin)</option>
+                <option value="LEAGUE_FINAL" {% if tournament.type == "LEAGUE_FINAL" %}selected{% endif %}>League + Final</option>
+            </select>
+        </label>
+    </div>
+    <div>
+        <label>Status:
+            <select name="status">
+                <option value="OPEN" {% if tournament.status == "OPEN" %}selected{% endif %}>OPEN</option>
+                <option value="IN_PROGRESS" {% if tournament.status == "IN_PROGRESS" %}selected{% endif %}>IN_PROGRESS</option>
+                <option value="FINISHED" {% if tournament.status == "FINISHED" %}selected{% endif %}>FINISHED</option>
+            </select>
+        </label>
+    </div>
+    <button type="submit">Update</button>
+</form>
+
+<hr>
+
+<form action="{{ url_for('admin_generate_schedule') }}" method="post" style="margin-top: 1rem;">
+    <p>현재 승인된 팀을 기준으로 대진/일정을 자동 생성합니다. **기존 Match 데이터는 모두 삭제됩니다.**</p>
+    <button type="submit">Generate Schedule</button>
+</form>
+
+<hr>
+
+{# --- [추가된 기능]: FINISHED 상태일 때 우승팀 표시 --- #}
+{% if tournament.status == "FINISHED" %}
+    <div style="padding: 15px; border: 2px solid green; background-color: #e6ffe6; margin-bottom: 20px;">
+        <h3>🏆 Tournament Finished!</h3>
+        {% if winner_team %}
+            <p style="font-size: 1.2em; font-weight: bold;">Winner: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
+        {% else %}
+            <p>The winner could not be determined or recorded.</p>
+        {% endif %}
+    </div>
+    <hr>
+{% endif %}
+{# ---------------------------------------------------- #}
+
+
+{# --- 리그 순위 테이블 표시 (LEAGUE 또는 LEAGUE_FINAL) --- #}
+{% if league_standings %}
+    <h3>League Standings (League Stage)</h3>
+    {% if league_standings|length > 0 %}
+        <table border="1" cellpadding="4" style="margin-bottom: 20px;">
+            <tr>
+                <th>Rank</th>
+                <th>Team</th>
+                <th>Points (P)</th>
+                <th>Wins (W)</th>
+                <th>Losses (L)</th>
+                <th>Games For (GF)</th>
+                <th>Games Against (GA)</th>
+                <th>Game Diff (GD)</th>
+            </tr>
+            {% for standing in league_standings %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><a href="{{ url_for('team_detail', team_id=standing.team_id) }}">{{ standing.team_name }}</a></td>
+                <td>{{ standing.P }}</td>
+                <td>{{ standing.W }}</td>
+                <td>{{ standing.L }}</td>
+                <td>{{ standing.GF }}</td>
+                <td>{{ standing.GA }}</td>
+                <td>{{ standing.GD }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>No league matches recorded yet or all matches are unfinished.</p>
+    {% endif %}
+    <hr>
+{% endif %}
+{# ------------------------------------------------------------------- #}
+
+
+<h3>Matches</h3>
+{% if matches %}
+<table border="1" cellpadding="4">
+    <tr>
+        <th>Stage</th>
+        <th>Round</th>
+        <th>Match</th>
+        <th>Team1</th>
+        <th>Team2</th>
+        <th>Status</th>
+        <th>Score</th>
+        <th>Action</th>
+    </tr>
+    {% for m in matches %}
+        <tr>
+            <td>{{ m.stage }}</td>
+            <td>{{ m.round_no }}</td>
+            <td>{{ m.match_no }}</td>
+            <td><a href="{{ url_for('team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
+            <td><a href="{{ url_for('team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>
+            <td>{{ m.status }}</td>
+            <td>
+                {% if m.status == "DONE" %}
+                    {{ m.team1_score }} : {{ m.team2_score }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                <a href="{{ url_for('admin_match_report', match_id=m.id) }}">Edit Result</a>
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No match schedule has been generated yet for this tournament.</p>
+{% endif %}
+{% endblock %}

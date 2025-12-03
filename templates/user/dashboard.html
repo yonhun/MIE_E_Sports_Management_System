@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>User Dashboard</h2>
+<p>Welcome, {{ user.real_name or user.username }}.</p>
+
+{% if tournament %}
+    <p>Current tournament: {{ tournament.name }} (status: {{ tournament.status }})</p>
+    {% if participant %}
+        <p>Your application status: {{ participant.status }}</p>
+    {% else %}
+        <p>You have not applied yet.</p>
+    {% endif %}
+{% else %}
+    <p>No tournament available.</p>
+{% endif %}
+{% endblock %}

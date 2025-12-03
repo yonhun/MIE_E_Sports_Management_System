@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Permissions Management</h2>
+<hr>
+
+{# -------------------- 1. 일반 사용자 목록 (ADMIN 권한 부여 폼) -------------------- #}
+<h3>Grant Admin Access</h3>
+
+<form action="{{ url_for('admin_permissions') }}" method="post">
+    <label>Select user to make ADMIN:
+        <select name="user_id">
+            {% for u in users %}
+                {# 🚨 수정: 쉼표로 구분된 역할 문자열을 리스트로 분리 후, 'ADMIN'이 없는지 확인합니다. #}
+                {% set user_roles = u.role.split(',') | map('trim') | list %}
+                {% if 'ADMIN' not in user_roles %}
+                    <option value="{{ u.id }}">{{ u.username }} ({{ u.role }})</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+    </label>
+    <button type="submit">Grant Admin Role</button>
+</form>
+
+<hr>
+
+{# -------------------- 2. 현재 관리자 목록 출력 -------------------- #}
+<h3>Current Admins</h3> 
+<ul>
+    {% for u in users %}
+        {# 🚨 수정: 쉼표로 구분된 역할 문자열을 리스트로 분리 후, 'ADMIN'이 포함되어 있는지 확인합니다. #}
+        {% set user_roles = u.role.split(',') | map('trim') | list %}
+        {% if 'ADMIN' in user_roles %}
+            <li><strong>{{ u.username }}</strong> (ID: {{ u.id }}, Roles: {{ u.role }})</li>
+        {% endif %}
+    {% endfor %}
+</ul>
+
+<hr>
+
+{# -------------------- 3. 일반 사용자 목록 출력 -------------------- #}
+<h3>General Users (Non-Admins)</h3>
+<ul>
+    {% for u in users %}
+        {# 🚨 수정: 쉼표로 구분된 역할 문자열을 리스트로 분리 후, 'ADMIN'이 없는지 확인합니다. #}
+        {% set user_roles = u.role.split(',') | map('trim') | list %}
+        {% if 'ADMIN' not in user_roles %}
+            <li>{{ u.username }} (ID: {{ u.id }}, Roles: {{ u.role }})</li>
+        {% endif %}
+    {% endfor %}
+</ul>
+{% endblock %}

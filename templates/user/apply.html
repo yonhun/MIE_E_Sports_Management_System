@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Apply for Tournament</h2>
+
+{% if not tournaments %}
+    <p>No tournament available.</p>
+{% else %}
+    <form action="{{ url_for('user_apply') }}" method="post">
+        <div>
+            <label>Select tournament:
+                <select name="tournament_id">
+                    {% for t in tournaments %}
+                        <option value="{{ t.id }}"
+                            {% if t.id == selected_tournament_id %}selected{% endif %}>
+                            {{ t.name }} (status: {{ t.status }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+
+        {% if current_tournament and current_tournament.status in ("IN_PROGRESS", "RUNNING", "FINISHED") %}
+            <div style="margin-top: 1rem; color: red; font-weight: bold;">
+                신청이 마감되었습니다. 토너먼트 상태: {{ current_tournament.status }}
+            </div>
+        {% elif is_application_open %}
+            {% if current_participant %}
+            <div style="margin-top: 1rem; font-weight: bold;">
+                이미 신청하셨습니다. 현재 상태: {{ current_participant.status }}
+            </div>
+            {% else %}
+            <div style="margin-top: 1rem;">
+                <button type="submit">Apply</button>
+            </div>
+            {% endif %}
+        {% endif %}
+    </form>
+
+    <hr>
+
+    <h3>Current application status</h3>
+    {% if current_participant %}
+        <p>Status: {{ current_participant.status }}</p>
+    {% else %}
+        <p>You have not applied for the selected tournament.</p>
+    {% endif %}
+
+    <hr>
+
+    <h3>Profile Info</h3>
+    <p>Student ID: {{ user.student_id or "Not set" }}</p>
+    <p>Name: {{ user.real_name or "Not set" }}</p>
+    <p>Riot ID: {{ user.summoner_riot_id or "Not set" }}</p>
+    <p>Solo Tier: {{ user.solo_tier or "No data" }}</p>
+    <p>Flex Tier: {{ user.flex_tier or "No data" }}</p>
+    <p>Estimated Score: {{ calculate_estimated_score(user) or "No score (unranked)" }}</p>
+    <p>(Student ID, Name, Riot ID는 필수, 랭크/점수는 참고용입니다.)</p>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Profile</h2>
+
+<form action="{{ url_for('user_profile') }}" method="post">
+    <div>
+        <label>Student ID (학번):
+            <input type="text" name="student_id" value="{{ user.student_id or '' }}">
+        </label>
+    </div>
+    <div>
+        <label>Name (이름):
+            <input type="text" name="real_name" value="{{ user.real_name or '' }}">
+        </label>
+    </div>
+    <div>
+        <label>Riot ID (닉네임#태그):
+            <input type="text" name="riot_id" value="{{ user.summoner_riot_id or '' }}">
+        </label>
+    </div>
+
+    <div>
+        <label>Primary Role:
+            <select name="primary_role">
+                <option value="">-- Select --</option>
+                {% for r in ["TOP","JUNGLE","MID","ADC","SUPPORT"] %}
+                    <option value="{{ r }}" {% if user.primary_role == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+
+    <div>
+        <label>Secondary Role 1:
+            <select name="secondary_role1">
+                <option value="">-- Select --</option>
+                {% for r in ["TOP","JUNGLE","MID","ADC","SUPPORT"] %}
+                    <option value="{{ r }}" {% if user.secondary_role1 == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+
+    <div>
+        <label>Secondary Role 2:
+            <select name="secondary_role2">
+                <option value="">-- Select --</option>
+                {% for r in ["TOP","JUNGLE","MID","ADC","SUPPORT"] %}
+                    <option value="{{ r }}" {% if user.secondary_role2 == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </label>
+    </div>
+
+    <div style="margin-top: 1rem;">
+        <button type="submit">Save Profile</button>
+    </div>
+</form>
+
+<hr>
+
+<h3>Current Profile</h3>
+<p>Username: {{ user.username }}</p>
+<p>Student ID: {{ user.student_id or "-" }}</p>
+<p>Name: {{ user.real_name or "-" }}</p>
+<p>Riot ID: {{ user.summoner_riot_id or "-" }}</p>
+<p>Primary Role: {{ user.primary_role or "-" }}</p>
+<p>Secondary Role 1: {{ user.secondary_role1 or "-" }}</p>
+<p>Secondary Role 2: {{ user.secondary_role2 or "-" }}</p>
+<p>Solo Tier: {{ user.solo_tier or "No data" }}</p>
+<p>Flex Tier: {{ user.flex_tier or "No data" }}</p>
+<p>Estimated Score: {{ calculate_estimated_score(user) or "No score (unranked)" }}</p>
+<p>Actual Score (set by admin): {{ user.actual_score if user.actual_score is not none else "Not set" }}</p>
+
+{% endblock %}

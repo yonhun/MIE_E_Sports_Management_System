@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Tournament Status</h2>
+
+{% if tournament %}
+    <p>Name: <strong>{{ tournament.name }}</strong></p>
+    <p>Status: <span style="font-weight: bold;">{{ tournament.status }}</span></p>
+
+    <hr>
+    
+    {# --- [추가된 기능]: FINISHED 상태일 때 우승팀 표시 --- #}
+    {% if tournament.status == "FINISHED" %}
+        <div style="padding: 15px; border: 2px solid green; background-color: #e6ffe6; margin-bottom: 20px;">
+            <h3>🏆 Final Result</h3>
+            {% if winner_team %}
+                <p style="font-size: 1.2em; font-weight: bold;">The Champion is: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a>!</p>
+            {% else %}
+                <p>The winner is currently being confirmed.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+    {# ---------------------------------------------------- #}
+
+
+    <h3>Teams</h3>
+    {% if teams %}
+        <ul>
+            {% for team in teams %}
+                <li>{{ team.name }}</li>
+            {% endfor %}
+        </ul>
+        
+        {# --- [추가된 기능]: 리그 순위 테이블 (LEAGUE/LEAGUE_FINAL) --- #}
+        {% if tournament.type == "LEAGUE" or tournament.type == "LEAGUE_FINAL" %}
+        <h4>League Standings</h4>
+        {% if league_standings %}
+        <table border="1" cellpadding="4" style="width: 100%;">
+            <tr>
+                <th>Rank</th>
+                <th>Team</th>
+                <th>Wins</th>
+                <th>Losses</th>
+                <th>Game Diff</th> {# Draws 항목을 Game Diff로 변경 #}
+                <th>Points</th>
+            </tr>
+            {% for standing in league_standings %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><a href="{{ url_for('team_detail', team_id=standing.team_id) }}">{{ standing.team_name }}</a></td>
+                <td>{{ standing.W }}</td>
+                <td>{{ standing.L }}</td>
+                <td>{{ standing.GD }}</td> {# D 항목을 GD로 변경 #}
+                <td><strong>{{ standing.P }}</strong></td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+            <p>League standings will appear once matches begin.</p>
+        {% endif %}
+
+        {# --- [추가된 기능]: 녹아웃 매치 현황 (KNOCKOUT) --- #}
+        {% elif tournament.type == "KNOCKOUT" %}
+            <h4>Knockout Matches</h4>
+            {% if matches %}
+                <table border="1" cellpadding="4">
+                    <tr>
+                        <th>Round</th>
+                        <th>Match</th>
+                        <th>Status</th>
+                        <th>Teams</th>
+                        <th>Score</th>
+                    </tr>
+                    {% for m in matches %}
+                    <tr>
+                        <td>{{ m.round_no }}</td>
+                        <td>{{ m.match_no }}</td>
+                        <td>{{ m.status }}</td>
+                        <td>
+                            <a href="{{ url_for('team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a> vs 
+                            <a href="{{ url_for('team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a>
+                        </td>
+                        <td>
+                            {% if m.status == "DONE" %}
+                                {{ m.team1_score }} : {{ m.team2_score }}
+                            {% else %}
+                                SCHEDULED
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+            {% else %}
+                <p>The knockout schedule has not been generated yet.</p>
+            {% endif %}
+        {% endif %}
+        {# ---------------------------------------------------- #}
+        
+    {% else %}
+        <p>No teams generated yet.</p>
+    {% endif %}
+{% else %}
+    <p>No tournament available.</p>
+{% endif %}
+{% endblock %}

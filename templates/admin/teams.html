@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Teams Management</h2>
+
+<form action="{{ url_for('admin_auto_generate_teams') }}" method="post" style="margin-bottom: 1rem;">
+    <p>Auto-generate를 실행하면 현재 팀 구성과 팀명이 모두 초기화됩니다.</p>
+    <button type="submit">Auto-generate Teams</button>
+</form>
+
+{% if teams|length > 0 %}
+<form action="{{ url_for('admin_teams') }}" method="post">
+    {% for team in teams %}
+
+        {% for tm in team.members %}
+            {% set u = tm.participant.user %}
+            {% set base = get_user_score(u) %}
+            {% set w_score = get_member_weighted_score(u, tm.assigned_role) %}
+        {% endfor %}
+
+        <div style="margin-bottom: 1rem; border: 1px solid #ccc; padding: 0.5rem;">
+            <label>Team Name:
+                <input type="text" name="team_name_{{ team.id }}" value="{{ team.name }}">
+            </label>
+
+            {% if team.captain %}
+            <span style="margin-left: 1rem;">
+                (Captain: {{ team.captain.real_name or team.captain.username }})
+            </span>
+            {% endif %}
+
+            <br>
+            
+            <label>Team Captain:
+                <select name="captain_user_{{ team.id }}">
+                    <option value="">-- select --</option>
+                    {% for tm in team.members %}
+                        {% set u = tm.participant.user %}
+                        <option value="{{ u.id }}"
+                                {% if team.captain_user_id == u.id %}selected{% endif %}>
+                            {{ u.real_name or u.username }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </label>
+            <p>
+                Team Base Score Sum: {{ team.base_total }} /
+                Team Weighted Score Sum: {{ "%.1f"|format(team.weighted_total) }}
+            </p>
+
+            <table border="1" cellpadding="4">
+                <tr>
+                    <th>Name</th>
+                    <th>Riot ID</th>
+                    <th>Assigned Role</th>
+                    <th>Primary / Sec1 / Sec2</th>
+                    <th>Base Score</th>
+                    <th>Weighted Score</th>
+                </tr>
+                {% for tm in team.members %}
+                    {% set u = tm.participant.user %}
+                    {% set base = get_user_score(u) %}
+                    {% set w_score = get_member_weighted_score(u, tm.assigned_role) %}
+                    <tr>
+                        <td>{{ u.real_name or u.username }}</td>
+                        <td>{{ u.summoner_riot_id or "-" }}</td>
+                        <td>{{ tm.assigned_role or "-" }}</td>
+                        <td>
+                            {{ u.primary_role or "-" }} /
+                            {{ u.secondary_role1 or "-" }} /
+                            {{ u.secondary_role2 or "-" }}
+                        </td>
+                        <td>{{ tm.base_score }}</td>
+                        <td>{{ "%.1f"|format(tm.weighted_score) }}</td>
+                    </tr>
+                {% endfor %}
+            </table>
+        </div>
+    {% endfor %}
+
+    <button type="submit">Update Team Names</button>
+</form>
+{% else %}
+    <p style="margin-top: 1rem;">No teams have been generated yet. Use the "Auto-generate Teams" button above.</p>
+{% endif %}
+
+{% endblock %}

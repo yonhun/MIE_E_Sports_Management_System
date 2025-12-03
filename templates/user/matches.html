@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Matches</h2>
+
+{% if not tournament %}
+    <p>No tournament is currently active.</p>
+{% elif not my_team_id %}
+    {% if not my_participant %}
+    <p>You are not currently participating in the tournament. Please use the "Apply" menu to join.</p>
+    {% elif my_participant.status != "APPROVED" %}
+    <p>Your application status is <strong>{{ my_participant.status }}</strong>. You will be assigned to a team after approval.</p>
+    {% else %}
+    <p>You have been approved, but teams have not been generated yet.</p>
+    {% endif %}
+{% elif not matches %}
+    <p>No matches have been scheduled for your team yet.</p>
+    <p>Current Tournament Status: <strong>{{ tournament.status }}</strong> (Stage: {{ tournament.current_stage or "-" }})</p>
+{% else %}
+<table border="1" cellpadding="4">
+    <tr>
+        <th>Stage</th>
+        <th>Round</th>
+        <th>Match</th>
+        <th>Team1</th>
+        <th>Team2</th>
+        <th>Status</th>
+        <th>Score</th>
+        <th>Action</th>
+    </tr>
+    {% for m in matches %}
+        <tr>
+            <td>{{ m.stage }}</td>
+            <td>{{ m.round_no }}</td>
+            <td>{{ m.match_no }}</td>
+            <td><a href="{{ url_for('team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
+            <td><a href="{{ url_for('team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>
+            <td>{{ m.status }}</td>
+            <td>
+                {% if m.status == "DONE" %}
+                    {{ m.team1_score }} : {{ m.team2_score }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if m.status == "SCHEDULED" %}
+                    <a href="{{ url_for('user_match_report', match_id=m.id) }}">Report Result</a>
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

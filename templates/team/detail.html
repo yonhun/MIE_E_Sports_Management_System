@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Team Detail</h2>
+
+<p>
+    Team name: {{ team.name }}
+    {% if team.captain %}
+        (Captain: {{ team.captain.real_name or team.captain.username }})
+    {% endif %}
+</p>
+<p>
+    Team Base Score Sum: {{ team.base_total }} /
+    Team Weighted Score Sum: {{ "%.1f"|format(team.weighted_total) }}
+</p>
+
+<h3>Members</h3>
+<table border="1" cellpadding="4">
+    <tr>
+        <th>Name</th>
+        <th>Riot ID</th>
+        <th>Assigned Role</th>
+        <th>Primary / Sec1 / Sec2</th>
+        <th>Base Score</th>
+        <th>Weighted Score</th>
+    </tr>
+    {% for tm in team.members %}
+        {% set u = tm.participant.user %}
+        <tr>
+            <td>{{ u.real_name or u.username }}</td>
+            <td>{{ u.summoner_riot_id or "-" }}</td>
+            <td>{{ tm.assigned_role or "-" }}</td>
+            <td>
+                {{ u.primary_role or "-" }} /
+                {{ u.secondary_role1 or "-" }} /
+                {{ u.secondary_role2 or "-" }}
+            </td>
+            <td>{{ tm.base_score }}</td>
+            <td>{{ "%.1f"|format(tm.weighted_score) }}</td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}

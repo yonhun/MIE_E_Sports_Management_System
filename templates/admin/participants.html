@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Participants Management</h2>
+
+{% if participants|length > 0 %}
+<form action="{{ url_for('admin_bulk_approve_participants') }}" method="post">
+    <table border="1" cellpadding="4">
+        <tr>
+            <th>ID</th>
+            <th>User</th>
+            <th>Riot ID</th>
+            <th>Status</th>
+            <th>Solo Tier</th>
+            <th>Flex Tier</th>
+            <th>Estimated Score</th>
+            <th>Actual Score</th>
+            <th>Input Score</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for p in participants %}
+        <tr>
+            <td>
+                {{ p.id }}
+                <input type="hidden" name="participant_id" value="{{ p.id }}">
+            </td>
+
+            <td>{{ p.user.real_name or p.user.username }}</td>
+
+            <td>{{ p.user.summoner_riot_id or "-" }}</td>
+
+            <td>{{ p.status }}</td>
+
+            <td>{{ p.user.solo_tier or "-" }}</td>
+
+            <td>{{ p.user.flex_tier or "-" }}</td>
+
+            <td>{{ calculate_estimated_score(p.user) or "-" }}</td>
+
+            <td>{{ p.user.actual_score if p.user.actual_score is not none else "-" }}</td>
+
+            <td>
+                <input type="number"
+                       name="input_score_{{ p.id }}"
+                       placeholder="score"
+                       value=""
+                       style="width: 80px;">
+            </td>
+
+            <td>
+                <button type="submit"
+                        formaction="{{ url_for('admin_approve_participant', participant_id=p.id) }}"
+                        formmethod="post">
+                    Approve
+                </button>
+
+                <button type="submit"
+                        formaction="{{ url_for('admin_reject_participant', participant_id=p.id) }}"
+                        formmethod="post">
+                    Reject
+                </button>
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <div style="margin-top: 1rem;">
+        <button type="submit">Approve All Pending (Bulk)</button>
+    </div>
+</form>
+{% else %}
+<p>No participants have applied to the current tournament yet.</p>
+{% endif %}
+
+{% endblock %}
