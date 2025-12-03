@@ -1,12 +1,51 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Dashboard</h2>
+<hr>
+
+{# <h3>📊 System Overview (Data requires fetching in app.py)</h3>
+<p>Total Registered Users: {{ total_users_count or "-" }}</p>
+<p style="color: orange;">
+    <a href="{{ url_for('admin_user_approvals') }}">Pending User Approvals</a>: <strong>{{ pending_users_count or "-" }}</strong>
+</p>
+<hr> #}
+
 
 {% if tournament %}
-    <p>Current tournament: {{ tournament.name }} (status: {{ tournament.status }})</p>
-    <p>Total applications: {{ total_applications }}</p>
-    <p>Approved: {{ approved }}</p>
+    <h3>🏆 Current Tournament: {{ tournament.name }}</h3>
+    <p>Status: <span style="font-weight: bold;">{{ tournament.status }}</span> (Stage: {{ tournament.current_stage or "-" }})</p>
+    
+    <table border="1" cellpadding="5" style="max-width: 500px;">
+        <tr>
+            <th>Metric</th>
+            <th>Value</th>
+            <th>Action Link</th>
+        </tr>
+        <tr>
+            <td>Total Applications</td>
+            <td>{{ total_applications }}</td>
+            <td><a href="{{ url_for('admin_participants') }}">Manage Participants</a></td>
+        </tr>
+        <tr>
+            <td>Approved Participants</td>
+            <td><strong>{{ approved }}</strong></td>
+            <td></td>
+        </tr>
+        {# Placeholder for Teams/Matches data - requires app.py update #}
+        <tr>
+            <td>Total Teams Formed</td>
+            <td>{{ total_teams_count or "-" }}</td>
+            <td><a href="{{ url_for('admin_teams') }}">Manage Teams</a></td>
+        </tr>
+        <tr>
+            <td>Pending Matches</td>
+            <td>{{ pending_matches_count or "-" }}</td>
+            <td><a href="{{ url_for('admin_tournament') }}">View Schedule</a></td>
+        </tr>
+    </table>
+    
 {% else %}
-    <p>No tournament available.</p>
+    <p>No tournament available. System is idle.</p>
 {% endif %}
+
 {% endblock %}

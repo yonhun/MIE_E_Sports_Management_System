@@ -2,15 +2,75 @@
 {% block content %}
 <h2>Dashboard</h2>
 <p>Welcome, {{ user.real_name or user.username }}.</p>
+<hr>
+
+{# User Profile Summary (Table format) #}
+<h3>👤 My Profile Snapshot</h3>
+<table border="1" cellpadding="5" style="max-width: 500px;">
+    <tr>
+        <th>Riot ID</th>
+        <td><strong>{{ user.summoner_riot_id or "Not set" }}</strong></td>
+    </tr>
+    <tr>
+        <th>Primary Role</th>
+        <td><strong>{{ user.primary_role or "-" }}</strong></td>
+    </tr>
+    <tr>
+        <th>Estimated Score</th>
+        <td><strong>{{ calculate_estimated_score(user) or "N/A" }}</strong></td>
+    </tr>
+    <tr>
+        <th>Profile Link</th>
+        <td><a href="{{ url_for('user_profile') }}">Update Profile & Roles</a></td>
+    </tr>
+</table>
+
+<hr>
 
 {% if tournament %}
-    <p>Current tournament: {{ tournament.name }} (status: {{ tournament.status }})</p>
+    <h3>🏆 Tournament Status: {{ tournament.name }}</h3>
+    <p>Current Status: <strong>{{ tournament.status }}</strong></p>
+
     {% if participant %}
-        <p>Your application status: {{ participant.status }}</p>
+        {# Application/Team Status Summary (Table format) #}
+        {% set status_class = 'status-' + participant.status | lower %}
+        
+        <table border="1" cellpadding="5" style="max-width: 500px; margin-top: 1rem;">
+            <tr>
+                <th>Application Status</th>
+                {# status_class가 색상을 적용하고 <strong> 태그가 굵게 표시 #}
+                <td class="{{ status_class }}"><strong>{{ participant.status }}</strong></td>
+            </tr>
+
+            {% if participant.status == 'APPROVED' %}
+                <tr>
+                    <th>Team Assignment</th>
+                    <td>
+                        {% if my_team %}
+                            {# my_team.name은 링크 텍스트이므로 <strong>을 포함하여 굵게 표시 #}
+                            <strong><a href="{{ url_for('user_team') }}">{{ my_team.name }}</a></strong>
+                            ({% if my_team.captain_user_id == user.id %}<strong>You are the Captain</strong>{% else %}<strong>Member</strong>{% endif %})
+                        {% else %}
+                            <strong>Awaiting Team Generation.</strong>
+                        {% endif %}
+                    </td>
+                </tr>
+                
+                {% if my_team %}
+                <tr>
+                    <th>Next Action</th>
+                    <td><a href="{{ url_for('user_matches') }}"><strong>View Your Matches</strong></a></td>
+                </tr>
+                {% endif %}
+            {% endif %}
+        </table>
+        
     {% else %}
         <p>You have not applied yet.</p>
+        <p>Next Step: <a href="{{ url_for('user_apply') }}">Apply for the Tournament</a></p>
     {% endif %}
+    
 {% else %}
-    <p>No tournament available.</p>
+    <p>No tournament available. System is idle.</p>
 {% endif %}
 {% endblock %}

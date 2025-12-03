@@ -61,6 +61,7 @@ nav ul li a {
     color: #495057;
     border-radius: 4px;
     transition: background-color 0.2s, color 0.2s;
+    font-weight: 600; 
 }
 nav ul li a:hover {
     background-color: #e9ecef;
@@ -377,4 +378,17 @@ table.user-list-table td:nth-child(4) {
 .match-team .score {
     font-weight: 700;
     margin-left: 10px;
+}
+
+/* 사용자 대시보드 애플리케이션 상태 색상 정의 */
+.status-approved {
+    color: green; /* APPROVED 상태 */
+}
+
+.status-pending {
+    color: orange; /* PENDING 상태 */
+}
+
+.status-rejected {
+    color: red; /* REJECTED 상태 */
 }

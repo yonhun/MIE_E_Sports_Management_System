@@ -117,14 +117,23 @@
                     {% set team1_is_winner = m.winner_team_id == m.team1_id %}
                     {% set team2_is_winner = m.winner_team_id == m.team2_id %}
                     
+                    {% set status_class_1 = '' %}
+                    {% set status_class_2 = '' %}
+                    
+                    {# 버그 수정: DONE 상태이고 winner_team_id가 있을 때만 winner/loser 클래스를 명확히 할당 #}
+                    {% if m.status == "DONE" and m.winner_team_id %}
+                        {% set status_class_1 = 'winner' if team1_is_winner else 'loser' %}
+                        {% set status_class_2 = 'winner' if team2_is_winner else 'loser' %}
+                    {% endif %}
+                    
                     <div class="bracket-match">
-                        <div class="match-team {% if team1_is_winner %}winner{% elif m.status == "DONE" and not team1_is_winner %}loser{% endif %}">
+                        <div class="match-team {{ status_class_1 }}">
                             <span>{{ m.team1.name }}</span>
                             {% if m.status == "DONE" %}
                             <span class="score">{{ m.team1_score }}</span>
                             {% endif %}
                         </div>
-                        <div class="match-team {% if team2_is_winner %}winner{% elif m.status == "DONE" and not team2_is_winner %}loser{% endif %}">
+                        <div class="match-team {{ status_class_2 }}">
                             <span>{{ m.team2.name }}</span>
                             {% if m.status == "DONE" %}
                             <span class="score">{{ m.team2_score }}</span>

@@ -637,16 +637,23 @@ def user_dashboard():
     user = current_user()
     tournament = Tournament.query.first()
     participant = None
+    my_team = None  # 팀 정보를 담을 변수 초기화
+
     if tournament:
         participant = Participant.query.filter_by(
             user_id=user.id, tournament_id=tournament.id
         ).first()
+        
+        # 참가자가 있고 팀 멤버십이 있다면 팀 정보를 가져옴
+        if participant and participant.team_membership:
+            my_team = participant.team_membership.team
 
     return render_template(
         "user/dashboard.html",
         user=user,
         tournament=tournament,
         participant=participant,
+        my_team=my_team, # <-- my_team 변수 추가 전달
     )
 
 
