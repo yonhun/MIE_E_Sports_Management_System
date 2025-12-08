@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Tournaments Administration</h2>
+<hr>
+
+{# -------------------- 1. 토너먼트 생성 폼 -------------------- #}
+<h3>Create New Tournament</h3>
+<form action="{{ url_for('admin_tournaments') }}" method="post">
+    <div>
+        <label>Name:
+            <input type="text" name="name" required>
+        </label>
+    </div>
+    <div>
+        <label>Type:
+            <select name="type">
+                <option value="KNOCKOUT" selected>Knockout (Playoff)</option>
+                <option value="LEAGUE">League (Round Robin)</option>
+                <option value="LEAGUE_FINAL">League + Final</option>
+            </select>
+        </label>
+    </div>
+    <button type="submit">Create Tournament</button>
+</form>
+
+<hr>
+
+{# Group tournaments by status for clear separation #}
+{% set active_tournaments = tournaments | selectattr('status', 'in', ['OPEN', 'IN_PROGRESS']) | list %}
+{% set finished_tournaments = tournaments | selectattr('status', '==', 'FINISHED') | list %}
+
+{# -------------------- 2. Active/Ongoing 토너먼트 목록 -------------------- #}
+<h3>Active / Ongoing Tournaments ({{ active_tournaments|length }})</h3>
+{% if active_tournaments %}
+<table border="1" cellpadding="5" class="tournament-list-table-admin">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    {% for t in active_tournaments %}
+    <tr>
+        <td>{{ t.id }}</td>
+        <td><strong>{{ t.name }}</strong></td>
+        <td>{{ t.type }}</td>
+        <td>{{ t.status }}</td>
+        <td>
+            {# Active 토너먼트의 관리 링크 유지 #}
+            <a href="{{ url_for('admin_tournament', tournament_id=t.id) }}">Settings/Schedule</a> |
+            <a href="{{ url_for('admin_participants', tournament_id=t.id) }}">Participants</a> |
+            <a href="{{ url_for('admin_teams', tournament_id=t.id) }}">Teams</a> 
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No active or open tournaments available.</p>
+{% endif %}
+
+<hr>
+
+{# -------------------- 3. Finished 토너먼트 목록 (이전 토너먼트) -------------------- #}
+<h3>Finished Tournaments (History) ({{ finished_tournaments|length }})</h3>
+{% if finished_tournaments %}
+<table border="1" cellpadding="5" class="tournament-list-table-admin">
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Actions</th>
+    </tr>
+    {% for t in finished_tournaments %}
+    <tr>
+        <td>{{ t.id }}</td>
+        <td><strong>{{ t.name }}</strong></td>
+        <td>{{ t.type }}</td>
+        <td><strong class="status-ok">{{ t.status }}</strong></td>
+        <td>
+            {# 🚨 수정: history 라우트로 변경 #}
+            <a href="{{ url_for('tournament_history', tournament_id=t.id) }}">View Final Status & Teams</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>No tournaments have been finished yet.</p>
+{% endif %}
+
+{% endblock %}

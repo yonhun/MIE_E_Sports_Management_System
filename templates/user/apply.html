@@ -1,81 +1,56 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Apply for Tournament</h2>
+{# 🚨 수정: 토너먼트 이름 표시 #}
+<h2>Apply for Tournament: {{ tournament.name }}</h2>
 
-{% if not tournaments %}
-    <p>No tournament available.</p>
-{% else %}
-    <form action="{{ url_for('user_apply') }}" method="post">
-        <div>
-            <label>Select tournament:
-                <select name="tournament_id">
-                    {% for t in tournaments %}
-                        <option value="{{ t.id }}"
-                            {% if t.id == selected_tournament_id %}selected{% endif %}>
-                            {{ t.name }} (status: {{ t.status }})
-                        </option>
-                    {% endfor %}
-                </select>
-            </label>
+{# 🚨 수정: tournaments 목록 대신 현재 tournament 객체를 사용 #}
+<form action="{{ url_for('user_apply', tournament_id=tournament.id) }}" method="post">
+    {# 토너먼트 선택 드롭다운은 제거 #}
+
+    {% if tournament and tournament.status in ("IN_PROGRESS", "RUNNING", "FINISHED") %}
+        <div style="margin-top: 1rem; color: red; font-weight: bold;">
+            신청이 마감되었습니다. 토너먼트 상태: {{ tournament.status }}
         </div>
-
-        {% if current_tournament and current_tournament.status in ("IN_PROGRESS", "RUNNING", "FINISHED") %}
-            <div style="margin-top: 1rem; color: red; font-weight: bold;">
-                신청이 마감되었습니다. 토너먼트 상태: {{ current_tournament.status }}
-            </div>
-        {% elif is_application_open %}
-            {% if current_participant %}
-            <div style="margin-top: 1rem; font-weight: bold;">
-                이미 신청하셨습니다. 현재 상태: {{ current_participant.status }}
-            </div>
-            {% else %}
-            <div style="margin-top: 1rem;">
-                <button type="submit">Apply</button>
-            </div>
-            {% endif %}
+    {% elif is_application_open %}
+        {% if current_participant %}
+        {% set status_class = 'status-' + current_participant.status | lower %}
+        <div style="margin-top: 1rem; font-weight: bold;">
+            신청 완료. 현재 상태: <span class="{{ status_class }}">{{ current_participant.status }}</span>
+        </div>
+        {% else %}
+        <div style="margin-top: 1rem;">
+            <button type="submit">Apply</button>
+        </div>
         {% endif %}
-    </form>
-
-    <hr>
-
-    <h3>Current application status</h3>
-    {% if current_participant %}
-        <p>Status: {{ current_participant.status }}</p>
-    {% else %}
-        <p>You have not applied for the selected tournament.</p>
     {% endif %}
+</form>
 
-    <hr>
-
-    <h3>Profile Info</h3>
-    {# 프로필 정보를 표(Table)로 변경 #}
-    <table border="1" cellpadding="5" style="max-width: 500px;">
-        <tr>
-            <th>Student ID</th>
-            <td>{{ user.student_id or "Not set" }}</td>
-        </tr>
-        <tr>
-            <th>Name</th>
-            <td>{{ user.real_name or "Not set" }}</td>
-        </tr>
-        <tr>
-            <th>Riot ID</th>
-            <td>{{ user.summoner_riot_id or "Not set" }}</td>
-        </tr>
-        <tr>
-            <th>Solo Tier</th>
-            <td>{{ user.solo_tier or "No data" }}</td>
-        </tr>
-        <tr>
-            <th>Flex Tier</th>
-            <td>{{ user.flex_tier or "No data" }}</td>
-        </tr>
-        <tr>
-            <th>Estimated Score</th>
-            <td><strong>{{ calculate_estimated_score(user) or "No score (unranked)" }}</strong></td>
-        </tr>
-    </table>
-    <p>(Student ID, Name, Riot ID는 필수, 랭크/점수는 참고용입니다.)</p>
-{% endif %}
-
+<h3>Profile Info</h3>
+<table border="1" cellpadding="5" style="max-width: 500px;">
+    <tr>
+        <th>Student ID</th>
+        <td>{{ user.student_id or "Not set" }}</td>
+    </tr>
+    <tr>
+        <th>Name</th>
+        <td>{{ user.real_name or "Not set" }}</td>
+    </tr>
+    <tr>
+        <th>Riot ID</th>
+        <td>{{ user.summoner_riot_id or "Not set" }}</td>
+    </tr>
+    <tr>
+        <th>Solo Tier</th>
+        <td>{{ user.solo_tier or "No data" }}</td>
+    </tr>
+    <tr>
+        <th>Flex Tier</th>
+        <td>{{ user.flex_tier or "No data" }}</td>
+    </tr>
+    <tr>
+        <th>Estimated Score</th>
+        <td><strong>{{ calculate_estimated_score(user) or "No score (unranked)" }}</strong></td>
+    </tr>
+</table>
+<p>(Student ID, Name, Riot ID는 필수, 랭크/점수는 참고용입니다.)</p>
 {% endblock %}

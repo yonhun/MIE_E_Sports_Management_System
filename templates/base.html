@@ -13,18 +13,13 @@
             <ul>
                 <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
                 <li><a href="{{ url_for('user_profile') }}">Profile</a></li>
-                <li><a href="{{ url_for('user_apply') }}">Apply</a></li>
-                <li><a href="{{ url_for('user_team') }}">Team</a></li>
-                <li><a href="{{ url_for('user_matches') }}">Matches</a></li>
-                <li><a href="{{ url_for('user_tournament_status') }}">Tournament Status</a></li>
+                <li><a href="{{ url_for('user_tournaments') }}">Tournaments</a></li> 
             </ul>
         {% elif session.get('role') == "ADMIN" %}
             <h4>Menu</h4>
             <ul>
                 <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
-                <li><a href="{{ url_for('admin_participants') }}">Participants</a></li>
-                <li><a href="{{ url_for('admin_teams') }}">Teams</a></li>
-                <li><a href="{{ url_for('admin_tournament') }}">Tournament</a></li>
+                <li><a href="{{ url_for('admin_tournaments') }}">Tournaments</a></li>
                 <li><a href="{{ url_for('admin_permissions') }}">Permissions</a></li>
                 <li><a href="{{ url_for('admin_user_approvals') }}">User Approvals</a></li>
             </ul>

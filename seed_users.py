@@ -13,12 +13,13 @@ def seed_users():
     app = create_app()
 
     with app.app_context():
-        # 토너먼트가 없으면 하나 생성
+        # 🚨 수정: 토너먼트가 없으면 "2025 2학기 LoL 대회"를 하나 생성하고, 있으면 첫 번째 토너먼트를 사용
         tournament = Tournament.query.first()
         if tournament is None:
-            tournament = Tournament(name="Default Tournament")
+            tournament = Tournament(name="2025 2학기 LoL 대회")
             db.session.add(tournament)
             db.session.commit()
+            db.session.flush() # ID 확보
 
         # UTF-8 BOM 있는 경우도 처리 가능하게 utf-8-sig 사용
         with open(CSV_FILE, newline="", encoding="utf-8-sig") as f:
@@ -90,6 +91,7 @@ def seed_users():
                 # USER 계정은 자동 참가 신청(PENDING), ADMIN은 신청 안 함
                 # (USER Role만 확인하므로, CSV에서 USER,ADMIN 으로 설정된 경우 USER로 간주하고 신청합니다.)
                 if "USER" in user.role: 
+                    # 🚨 수정: 첫 번째 토너먼트에 신청
                     existing_participant = Participant.query.filter_by(
                         user_id=user.id,
                         tournament_id=tournament.id,

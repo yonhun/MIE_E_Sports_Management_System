@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Matches</h2>
+{# 🚨 수정: 토너먼트 이름 표시 #}
+<h2>Matches ({{ tournament.name }})</h2>
 
 {% if not tournament %}
     <p>No tournament is currently active.</p>
 {% elif not my_team_id %}
     {% if not my_participant %}
     <p>You are not currently participating in the tournament. Please use the "Apply" menu to join.</p>
+    {# 🚨 수정: 토너먼트 목록으로 리다이렉트 #}
+    <p><a href="{{ url_for('user_tournaments') }}">Go to Tournaments List</a></p>
     {% elif my_participant.status != "APPROVED" %}
     <p>Your application status is <strong>{{ my_participant.status }}</strong>. You will be assigned to a team after approval.</p>
     {% else %}

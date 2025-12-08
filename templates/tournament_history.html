@@ -1,48 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Tournament Settings: {{ tournament.name }} (ID: {{ tournament.id }})</h2>
+<h2>Tournament History: {{ tournament.name }} (ID: {{ tournament.id }})</h2>
+<p><strong>Type:</strong> {{ tournament.type }} | <strong>Status:</strong> {{ tournament.status }}</p>
 <hr>
 
-{# -------------------- 1. 기본 정보 수정 폼 -------------------- #}
-<form action="{{ url_for('admin_tournament', tournament_id=tournament.id) }}" method="post">
-    <div>
-        <label>Tournament Name:
-            <input type="text" name="name" value="{{ tournament.name }}" disabled>
-        </label>
-    </div>
-    <div>
-        <label>Type:
-            <select name="type">
-                <option value="KNOCKOUT" {% if tournament.type == "KNOCKOUT" %}selected{% endif %}>Knockout (Playoff)</option>
-                <option value="LEAGUE" {% if tournament.type == "LEAGUE" %}selected{% endif %}>League (Round Robin)</option>
-                <option value="LEAGUE_FINAL" {% if tournament.type == "LEAGUE_FINAL" %}selected{% endif %}>League + Final</option>
-            </select>
-        </label>
-    </div>
-    <div>
-        <label>Status:
-            <select name="status">
-                <option value="OPEN" {% if tournament.status == "OPEN" %}selected{% endif %}>OPEN</option>
-                <option value="IN_PROGRESS" {% if tournament.status == "IN_PROGRESS" %}selected{% endif %}>IN_PROGRESS</option>
-                <option value="FINISHED" {% if tournament.status == "FINISHED" %}selected{% endif %}>FINISHED</option>
-            </select>
-        </label>
-    </div>
-    <button type="submit">Update</button>
-</form>
-
-<hr>
-
-{# -------------------- 2. 매치 생성 및 초기화 -------------------- #}
-<form action="{{ url_for('admin_generate_schedule', tournament_id=tournament.id) }}" method="post" style="margin-top: 1rem;">
-    <p>현재 승인된 팀을 기준으로 대진/일정을 자동 생성합니다. **기존 Match 데이터는 모두 삭제됩니다.**</p>
-    {# 🚨 수정: 엔드포인트 이름을 'admin_generate_schedule'로 변경 #}
-    <button type="submit">Generate Schedule</button>
-</form>
-
-<hr>
-
-{# --- 3. FINISHED 상태일 때 우승팀 표시 --- #}
+{# --- 1. FINISHED 상태일 때 우승팀 표시 --- #}
 {% if tournament.status == "FINISHED" %}
     <div class="finished-box">
         <h3>🏆 Tournament Finished!</h3>
@@ -54,10 +16,9 @@
     </div>
     <hr>
 {% endif %}
-{# ---------------------------------------------------- #}
 
 
-{# --- 4. 리그 순위 테이블 표시 (LEAGUE 또는 LEAGUE_FINAL) --- #}
+{# --- 2. 리그 순위 테이블 표시 (LEAGUE 또는 LEAGUE_FINAL) --- #}
 {% if league_standings %}
     <h3>League Standings (League Stage)</h3>
     {% if league_standings|length > 0 %}
@@ -90,15 +51,13 @@
     {% endif %}
     <hr>
 {% endif %}
-{# ------------------------------------------------------------------- #}
 
 
-<h3>Matches</h3>
+<h3>Matches Schedule</h3>
 
-{# 5. KNOCKOUT 브래킷 시각화 #}
+{# 3. KNOCKOUT 브래킷 시각화 #}
 {% set max_round_no = 0 %}
 {% if matches %}
-    {# 매치 목록에서 최대 라운드 번호를 계산 (매치 테이블 제목에 사용) #}
     {% set max_round_list = matches | map(attribute='round_no') | list %}
     {% set max_round_no = max(max_round_list) if max_round_list else 0 %}
 {% endif %}
@@ -108,7 +67,6 @@
     <div style="margin-top: 1.5rem;">
         <h4>Knockout Bracket Visualization</h4>
         
-        {# 매치 목록을 round_no 기준으로 그룹화합니다. #}
         {% set rounds = matches | groupby('round_no') | list %}
         
         <div class="bracket-container">
@@ -129,7 +87,6 @@
                     {% set status_class_1 = '' %}
                     {% set status_class_2 = '' %}
                     
-                    {# 버그 수정: DONE 상태이고 winner_team_id가 있을 때만 winner/loser 클래스를 명확히 할당 #}
                     {% if m.status == "DONE" and m.winner_team_id %}
                         {% set status_class_1 = 'winner' if team1_is_winner else 'loser' %}
                         {% set status_class_2 = 'winner' if team2_is_winner else 'loser' %}
@@ -158,8 +115,7 @@
     {# ------------------ [END KNOCKOUT 브래킷 시각화] ------------------ #}
 {% endif %}
 
-
-{# 6. 일반 매치 목록 테이블 #}
+{# 4. 일반 매치 목록 테이블 (읽기 전용) #}
 {% if matches %}
 <table border="1" cellpadding="4">
     <tr>
@@ -170,13 +126,11 @@
         <th>Team2</th>
         <th>Status</th>
         <th>Score</th>
-        <th>Action</th>
     </tr>
     {% for m in matches %}
         <tr>
             <td>{{ m.stage }}</td>
             <td>
-                {# KNOCKOUT 타입이 아니거나 라운드가 Max round와 같으면 "Final" 표시 #}
                 {% if m.round_no == total_rounds %}
                     Final
                 {% else %}
@@ -194,13 +148,58 @@
                     -
                 {% endif %}
             </td>
-            <td>
-                <a href="{{ url_for('admin_match_report', match_id=m.id) }}">Edit Result</a>
-            </td>
         </tr>
     {% endfor %}
 </table>
 {% else %}
 <p>No match schedule has been generated yet for this tournament.</p>
 {% endif %}
+
+<hr>
+
+{# 5. 토너먼트 팀 목록 #}
+<h3>Teams ({{ teams|length }})</h3>
+
+{% if teams|length > 0 %}
+    {% for team in teams %}
+    {% set captain_user = team.captain_user %}
+    <div style="margin-bottom: 1rem; border: 1px solid #ccc; padding: 0.5rem;">
+        <h4>Team Name: {{ team.name }} (Captain: {{ captain_user.real_name or captain_user.username if captain_user else 'N/A' }})</h4>
+
+        <p>
+            Team Base Score Sum: {{ team.base_total }} /
+            Team Weighted Score Sum: {{ "%.1f"|format(team.weighted_total) }}
+        </p>
+
+        <table border="1" cellpadding="4" class="team-member-list">
+            <tr>
+                <th>Name</th>
+                <th>Riot ID</th>
+                <th>Assigned Role</th>
+                <th>Primary / Sec1 / Sec2</th>
+                <th>Base Score</th>
+                <th>Weighted Score</th>
+            </tr>
+            {% for tm in team.members %}
+                {% set u = tm.participant.user %}
+                <tr>
+                    <td>{{ u.real_name or u.username }}</td>
+                    <td>{{ u.summoner_riot_id or "-" }}</td>
+                    <td>{{ tm.assigned_role or "-" }}</td>
+                    <td>
+                        {{ u.primary_role or "-" }} /
+                        {{ u.secondary_role1 or "-" }} /
+                        {{ u.secondary_role2 or "-" }}
+                    </td>
+                    <td>{{ tm.base_score }}</td>
+                    <td>{{ "%.1f"|format(tm.weighted_score) }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+{% else %}
+    <p style="margin-top: 1rem;">No teams have been generated yet for this tournament.</p>
+{% endif %}
+
 {% endblock %}

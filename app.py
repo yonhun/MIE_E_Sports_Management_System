@@ -1,3 +1,4 @@
+import math
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -8,9 +9,9 @@ from itertools import combinations
 from riot_api import get_summoner_ranks
 from score import calculate_estimated_score
 
-import random
 
 ROLES = ["TOP", "JUNGLE", "MID", "ADC", "SUPPORT"]
+
 
 def create_app():
     app = Flask(__name__)
@@ -19,12 +20,6 @@ def create_app():
 
     with app.app_context():
         db.create_all()
-
-        # 기본 토너먼트 1개 생성
-        if Tournament.query.count() == 0:
-            t = Tournament(name="Default Tournament")
-            db.session.add(t)
-            db.session.commit()
 
         # 필요하다면 기본 관리자 계정 생성 (예: admin / admin)
         if User.query.filter_by(username="admin").first() is None:
@@ -37,7 +32,7 @@ def create_app():
             )
             db.session.add(admin_user)
             db.session.commit()
-
+            
     return app
 
 
@@ -52,6 +47,14 @@ def current_user():
     user = User.query.get(user_id)
     
     return user
+
+# 🚨 추가: 토너먼트 ID를 기반으로 객체를 가져오는 헬퍼 함수
+def get_tournament_or_404(tournament_id):
+    t = Tournament.query.get(tournament_id)
+    if not t:
+        from flask import abort
+        abort(404, description="Tournament not found")
+    return t
 
 
 def login_required(role=None):
@@ -88,6 +91,7 @@ def get_user_score(user) -> int:
     """
     if user.actual_score is not None:
         return user.actual_score
+    # NOTE: calculate_estimated_score is imported from score.py
     est = calculate_estimated_score(user)
     if est is not None:
         return est
@@ -306,7 +310,7 @@ def calculate_tournament_winner(tournament: Tournament) -> Team | None:
         if tournament.type == "KNOCKOUT":
              # 마지막 라운드 승자 목록 (최종 우승팀만 남았을 가능성)
              # 이 로직은 progress_tournament_if_needed가 제대로 작동하면 필요 없을 수 있지만, 안전 장치입니다.
-             pass # 현재 로직에서는 progress_tournament_if_needed가 FINISHED 상태로 만들 때 winner_team을 찾지 않으므로, 이 부분을 개선해야 함.
+             pass 
 
     elif tournament.type == "LEAGUE":
         # 리그전의 경우, calculate_league_standings를 사용합니다.
@@ -490,7 +494,71 @@ def inject_helpers():
         calculate_estimated_score=calculate_estimated_score,
         get_user_score=get_user_score,
         get_member_weighted_score=get_member_weighted_score,
+        max=max,
     )
+
+
+def tournament_history_data_loader(tournament):
+    # Matches
+    matches = Match.query.filter_by(tournament_id=tournament.id).order_by(Match.stage, Match.round_no, Match.match_no).all()
+    
+    # Teams and Scores Calculation
+    teams = Team.query.filter_by(tournament_id=tournament.id).all()
+    
+    for team in teams:
+        base_total = 0
+        weighted_total = 0
+        captain_user = None
+        for tm in team.members:
+            user = tm.participant.user
+            base = get_user_score(user)
+            w_score = get_member_weighted_score(user, tm.assigned_role)
+
+            base_total += base
+            weighted_total += w_score
+
+            # Attach scores dynamically for template access
+            tm.base_score = base
+            tm.weighted_score = w_score
+            
+            # Attach captain's user object
+            # Note: team.captain_user_id는 TeamMember 객체의 user가 아닌
+            # User 객체 자체에서 가져와야 하지만, 편의상 여기서 찾아서 team 객체에 붙여줍니다.
+            if team.captain_user_id == user.id:
+                 captain_user = user 
+        
+        team.base_total = base_total
+        team.weighted_total = weighted_total
+        team.captain_user = captain_user # 팀 객체에 캡틴 유저 정보 첨부
+        
+    # Winner
+    winner_team = calculate_tournament_winner(tournament)
+        
+    # League Standings
+    league_standings = None
+    if tournament.type in ('LEAGUE', 'LEAGUE_FINAL'):
+        league_standings = calculate_league_standings(tournament) 
+        
+    return {
+        "tournament": tournament,
+        "matches": matches,
+        "teams": teams,
+        "winner_team": winner_team,
+        "league_standings": league_standings
+    }
+
+
+def calculate_theoretical_rounds(tournament_id):
+    """
+    Calculates the total number of rounds required for a complete knockout bracket
+    based on the number of teams. N_rounds = ceil(log2(N_teams)).
+    """
+    # NOTE: Team.query.filter_by는 models.py의 Team 모델에 기반합니다.
+    teams_count = Team.query.filter_by(tournament_id=tournament_id).count()
+    if teams_count < 2:
+        return 0
+    # math.ceil(math.log2(teams_count))
+    return math.ceil(math.log2(teams_count))
 
 
 # -------------------- Auth --------------------
@@ -498,7 +566,7 @@ def inject_helpers():
 @app.route("/", methods=["GET"])
 def login_page():
     # 최초 진입 화면 = 로그인 화면
-    # 🚨 수정: GET 요청 시 역할 선택 폼이 표시되지 않도록 빈 roles=None을 전달
+    # NOTE: 현재 로그인 세션이 유지되고 있다면 dashboard로 리디렉션하는 로직이 필요할 수 있습니다.
     return render_template("login.html", roles=None)
 
 
@@ -635,31 +703,23 @@ def logout():
 @login_required(role="USER")
 def user_dashboard():
     user = current_user()
-    tournament = Tournament.query.first()
-    participant = None
-    my_team = None  # 팀 정보를 담을 변수 초기화
-
-    if tournament:
-        participant = Participant.query.filter_by(
-            user_id=user.id, tournament_id=tournament.id
-        ).first()
-        
-        # 참가자가 있고 팀 멤버십이 있다면 팀 정보를 가져옴
-        if participant and participant.team_membership:
-            my_team = participant.team_membership.team
+    
+    # 🚨 수정: 토너먼트 목록을 가져옵니다.
+    tournaments = Tournament.query.all()
+    
+    # 대시보드에서는 신청 정보 대신 토너먼트 목록만 보여줍니다.
+    # 신청 정보는 /user/tournaments 페이지로 이동합니다.
 
     return render_template(
         "user/dashboard.html",
         user=user,
-        tournament=tournament,
-        participant=participant,
-        my_team=my_team, # <-- my_team 변수 추가 전달
+        tournaments=tournaments, # 토너먼트 목록을 전달합니다.
     )
-
 
 @app.route("/user/profile", methods=["GET", "POST"])
 @login_required(role="USER")
 def user_profile():
+    # (Profile Routes remain unchanged as they are not tournament-specific)
     user = current_user()
 
     if request.method == "POST":
@@ -724,47 +784,41 @@ def user_profile():
 
     return render_template("user/profile.html", user=user)
 
-
-@app.route("/user/apply", methods=["GET", "POST"])
+# 🚨 추가: 사용자용 토너먼트 목록 페이지
+@app.route("/user/tournaments")
 @login_required(role="USER")
-def user_apply():
-    user = current_user()
+def user_tournaments():
+    # 🚨 수정된 핵심 로직: 모든 토너먼트를 가져와서 참여 여부와 상관없이 표시합니다.
     tournaments = Tournament.query.all()
-
-    selected_tournament_id = None
-    if tournaments:
-        selected_tournament_id = tournaments[0].id
-
-    # 토너먼트 상태를 GET 요청 처리 시 미리 확인하여 템플릿에 전달
-    current_tournament = None
-    is_application_open = False
+    user = current_user()
     
-    if selected_tournament_id:
-        current_tournament = Tournament.query.get(selected_tournament_id)
-        if current_tournament:
-            # 신청 가능 조건: OPEN 상태
-            if current_tournament.status == "OPEN":
-                is_application_open = True
+    # 각 토너먼트에 대한 사용자의 참가 상태를 조회
+    for t in tournaments:
+        t.my_participant = Participant.query.filter_by(
+            user_id=user.id, tournament_id=t.id
+        ).first()
+
+    return render_template("user/tournaments.html", tournaments=tournaments)
+
+
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/user/tournaments/<int:tournament_id>/apply", methods=["GET", "POST"])
+@login_required(role="USER")
+def user_apply(tournament_id):
+    user = current_user()
+    tournament = get_tournament_or_404(tournament_id)
+
+    # GET 요청 처리 시 미리 확인하여 템플릿에 전달
+    is_application_open = (tournament.status == "OPEN")
                 
     # POST 요청 처리
     if request.method == "POST":
-        selected_tournament_id = request.form.get("tournament_id")
-        if not selected_tournament_id:
-            flash("Tournament selection is required.")
-            return redirect(url_for("user_apply"))
-
-        tournament = Tournament.query.get(selected_tournament_id)
-        if not tournament:
-            flash("Invalid tournament.")
-            return redirect(url_for("user_apply"))
-
         # ----------------------------------------------------
         # 신청 가능 여부 확인
         # ----------------------------------------------------
         if tournament.status not in ("OPEN",):
             flash(f"Application is closed. The tournament is currently {tournament.status}.")
-            return redirect(url_for("user_apply"))
-        # ----------------------------------------------------
+            return redirect(url_for("user_apply", tournament_id=tournament_id))
 
         # 프로필 필수 정보 확인
         if not user.student_id or not user.real_name:
@@ -786,7 +840,7 @@ def user_apply():
 
         if existing:
             flash(f"You have already applied. Current status: {existing.status}")
-            return redirect(url_for("user_apply"))
+            return redirect(url_for("user_apply", tournament_id=tournament_id))
 
         p = Participant(
             user_id=user.id,
@@ -797,44 +851,40 @@ def user_apply():
         db.session.commit()
 
         flash("Application submitted.")
-        return redirect(url_for("user_apply"))
+        return redirect(url_for("user_apply", tournament_id=tournament_id))
 
     # GET 요청 처리
-    current_participant = None
-    if selected_tournament_id:
-        current_participant = Participant.query.filter_by(
-            user_id=user.id,
-            tournament_id=selected_tournament_id,
-        ).first()
+    current_participant = Participant.query.filter_by(
+        user_id=user.id,
+        tournament_id=tournament_id,
+    ).first()
 
     return render_template(
         "user/apply.html",
         user=user,
-        tournaments=tournaments,
-        selected_tournament_id=selected_tournament_id,
+        tournament=tournament,
         current_participant=current_participant,
-        is_application_open=is_application_open, # 템플릿에 전달
-        current_tournament=current_tournament, # 템플릿에 전달
+        is_application_open=is_application_open,
     )
 
 
-@app.route("/user/team")
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/user/tournaments/<int:tournament_id>/team")
 @login_required(role="USER")
-def user_team():
+def user_team(tournament_id):
     user = current_user()
-    tournament = Tournament.query.first()
-    participant = None
+    tournament = get_tournament_or_404(tournament_id)
+    
+    participant = Participant.query.filter_by(
+        user_id=user.id, tournament_id=tournament.id
+    ).first()
     team = None
 
-    if tournament:
-        participant = Participant.query.filter_by(
-            user_id=user.id, tournament_id=tournament.id
-        ).first()
-        if participant and participant.team_membership:
-            team = participant.team_membership.team
+    if participant and participant.team_membership:
+        team = participant.team_membership.team
 
     if not team:
-        return render_template("user/team.html", team=None, is_captain=False)
+        return render_template("user/team.html", team=None, is_captain=False, tournament=tournament)
 
     is_captain = (team.captain_user_id == user.id)
 
@@ -852,92 +902,48 @@ def user_team():
     team.base_total = base_total
     team.weighted_total = weighted_total
 
-    return render_template("user/team.html", team=team, is_captain=is_captain)
+    return render_template("user/team.html", team=team, is_captain=is_captain, tournament=tournament)
 
 
-@app.route("/user/team/rename", methods=["POST"])
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/user/tournaments/<int:tournament_id>/team/rename", methods=["POST"])
 @login_required(role="USER")
-def user_team_rename():
+def user_team_rename(tournament_id):
     user = current_user()
-    tournament = Tournament.query.first()
-    if not tournament:
-        flash("No tournament found.")
-        return redirect(url_for("user_team"))
-
+    tournament = get_tournament_or_404(tournament_id)
+    
     participant = Participant.query.filter_by(
         user_id=user.id, tournament_id=tournament.id
     ).first()
 
     if not participant or not participant.team_membership:
         flash("You are not assigned to any team.")
-        return redirect(url_for("user_team"))
+        return redirect(url_for("user_team", tournament_id=tournament_id))
 
     team = participant.team_membership.team
 
     if team.captain_user_id != user.id:
         flash("Only the team captain can rename the team.")
-        return redirect(url_for("user_team"))
+        return redirect(url_for("user_team", tournament_id=tournament_id))
 
     new_name = request.form.get("team_name", "").strip()
     if not new_name:
         flash("Team name cannot be empty.")
-        return redirect(url_for("user_team"))
+        return redirect(url_for("user_team", tournament_id=tournament_id))
 
     team.name = new_name
     db.session.commit()
     flash("Team name updated.")
-    return redirect(url_for("user_team"))
+    return redirect(url_for("user_team", tournament_id=tournament_id))
 
 
-@app.route("/user/tournament-status")
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/user/tournaments/<int:tournament_id>/matches")
 @login_required(role="USER")
-def user_tournament_status():
-    tournament = Tournament.query.first()
-    teams = []
-    league_standings = None
-    matches = []
-    winner_team = None
-
-    if tournament:
-        teams = Team.query.filter_by(tournament_id=tournament.id).all()
-        
-        if tournament.type in ("LEAGUE", "LEAGUE_FINAL"):
-            league_standings = calculate_league_standings(tournament)
-        
-        if tournament.type == "KNOCKOUT":
-            # 녹아웃은 매치 목록을 보여줍니다.
-            matches = Match.query.filter_by(tournament_id=tournament.id).order_by(
-                Match.round_no.desc(), Match.match_no.desc()
-            ).all()
-
-        if tournament.status == "FINISHED":
-            winner_team = calculate_tournament_winner(tournament)
-
-    return render_template(
-        "user/tournament_status.html",
-        tournament=tournament,
-        teams=teams,
-        league_standings=league_standings, # 템플릿에 전달
-        matches=matches,                   # 템플릿에 전달
-        winner_team=winner_team,           # 템플릿에 전달
-    )
-
-
-@app.route("/user/matches")
-@login_required(role="USER")
-def user_matches():
+def user_matches(tournament_id):
     user = current_user()
-    # 이 유저가 속한 팀들 (보통 하나지만 일반화)
-    team_ids = {tm.team_id for p in Participant.query.filter_by(user_id=user.id).all()
-                               for tm in p.team_membership.team.members} if False else set()
-
-    # 실제로는 좀 더 간단히: 현재 토너먼트 기준에서 participant → team 찾기
-    tournament = Tournament.query.first()
+    tournament = get_tournament_or_404(tournament_id)
     
-    # 1. 토너먼트가 없는 경우
-    if not tournament:
-        return render_template("user/matches.html", matches=[], tournament=None, my_participant=None, my_team_id=None)
-
     my_participant = Participant.query.filter_by(
         user_id=user.id, tournament_id=tournament.id
     ).first()
@@ -966,12 +972,13 @@ def user_matches():
                            my_team_id=my_team_id)
 
 
+# (user_match_report는 match_id만으로 충분하며, 내부에서 tournament를 찾습니다.)
 @app.route("/user/matches/<int:match_id>/report", methods=["GET", "POST"])
 @login_required(role="USER")
 def user_match_report(match_id):
     user = current_user()
     m = Match.query.get_or_404(match_id)
-    tournament = Tournament.query.get(m.tournament_id)
+    tournament = get_tournament_or_404(m.tournament_id) # 🚨 수정: get_tournament_or_404 사용
 
     # 이 유저가 이 경기의 팀장인지 확인
     my_participant = Participant.query.filter_by(
@@ -979,17 +986,17 @@ def user_match_report(match_id):
     ).first()
     if not my_participant or not my_participant.team_membership:
         flash("You are not in any team for this tournament.")
-        return redirect(url_for("user_matches"))
+        return redirect(url_for("user_matches", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     my_team = my_participant.team_membership.team
     if my_team.id not in (m.team1_id, m.team2_id):
         flash("You are not a player in this match.")
-        return redirect(url_for("user_matches"))
+        return redirect(url_for("user_matches", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     # 팀장 체크
     if my_team.captain_user_id != user.id:
         flash("Only the team captain can report results.")
-        return redirect(url_for("user_matches"))
+        return redirect(url_for("user_matches", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     if request.method == "POST":
         try:
@@ -1038,7 +1045,7 @@ def user_match_report(match_id):
         progress_tournament_if_needed(tournament)
 
         flash("Match result submitted.")
-        return redirect(url_for("user_matches"))
+        return redirect(url_for("user_matches", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     return render_template("user/match_report.html", match=m)
 
@@ -1076,63 +1083,78 @@ def admin_dashboard():
     total_users_count = User.query.count()
     pending_users_count = User.query.filter_by(approval_status="PENDING").count()
 
-    tournament = Tournament.query.first()
-    total_applications = 0
-    approved = 0
+    # 🚨 수정: 토너먼트 목록을 가져옵니다.
+    tournaments = Tournament.query.all()
     
-    # 템플릿에서 오류가 나지 않도록 기본값 초기화
-    total_teams_count = 0
-    pending_matches_count = 0
+    # 대시보드에서 각 토너먼트의 요약 정보를 계산하여 표시
+    for t in tournaments:
+        t.total_applications = Participant.query.filter_by(tournament_id=t.id).count()
+        t.approved = Participant.query.filter_by(tournament_id=t.id, status="APPROVED").count()
+        t.total_teams_count = Team.query.filter_by(tournament_id=t.id).count()
+        t.pending_matches_count = Match.query.filter_by(tournament_id=t.id, status="SCHEDULED").count()
     
-    if tournament:
-        total_applications = Participant.query.filter_by(
-            tournament_id=tournament.id
-        ).count()
-        approved = Participant.query.filter_by(
-            tournament_id=tournament.id, status="APPROVED"
-        ).count()
-        
-        # 2. 현재 토너먼트의 팀 및 매치 수 계산
-        total_teams_count = Team.query.filter_by(tournament_id=tournament.id).count()
-        pending_matches_count = Match.query.filter_by(
-            tournament_id=tournament.id, status="SCHEDULED"
-        ).count()
-
     return render_template(
         "admin/dashboard.html",
-        tournament=tournament,
-        total_applications=total_applications,
-        approved=approved,
+        tournaments=tournaments, # 🚨 수정: tournaments 목록 전달
         # 추가된 시스템 개요 변수
         total_users_count=total_users_count,
         pending_users_count=pending_users_count,
-        # 토너먼트 상태 테이블 변수
-        total_teams_count=total_teams_count,
-        pending_matches_count=pending_matches_count,
     )
 
-
-@app.route("/admin/participants")
+# 🚨 추가: 관리자용 토너먼트 목록/생성 페이지
+@app.route("/admin/tournaments", methods=["GET", "POST"])
 @login_required(role="ADMIN")
-def admin_participants():
-    tournament = Tournament.query.first()
-    participants = []
-    if tournament:
-        participants = Participant.query.filter_by(
-            tournament_id=tournament.id
-        ).all()
-    return render_template("admin/participants.html", participants=participants)
+def admin_tournaments():
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        t_type = request.form.get("type", "KNOCKOUT").strip()
+        
+        if not name:
+            flash("Tournament name is required.")
+        elif t_type not in ("KNOCKOUT", "LEAGUE", "LEAGUE_FINAL"):
+            flash("Invalid tournament type.")
+        else:
+            t = Tournament(
+                name=name,
+                type=t_type,
+                status="OPEN"
+            )
+            db.session.add(t)
+            db.session.commit()
+            flash(f"Tournament '{name}' created.")
+            return redirect(url_for("admin_tournaments"))
+
+    tournaments = Tournament.query.all()
+    return render_template("admin/tournaments.html", tournaments=tournaments)
 
 
-@app.route("/admin/participants/<int:participant_id>/approve", methods=["POST"])
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/admin/tournaments/<int:tournament_id>/participants")
 @login_required(role="ADMIN")
-def admin_approve_participant(participant_id):
+def admin_participants(tournament_id):
+    tournament = get_tournament_or_404(tournament_id) # 🚨 수정: get_tournament_or_404 사용
+    participants = Participant.query.filter_by(
+        tournament_id=tournament.id
+    ).all()
+    return render_template("admin/participants.html", participants=participants, tournament=tournament)
+
+
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/admin/tournaments/<int:tournament_id>/participants/<int:participant_id>/approve", methods=["POST"])
+@login_required(role="ADMIN")
+def admin_approve_participant(tournament_id, participant_id):
+    tournament = get_tournament_or_404(tournament_id) # 🚨 추가
     p = Participant.query.get_or_404(participant_id)
+
+    # 🚨 추가: 토너먼트 ID 일치 확인
+    if p.tournament_id != tournament.id:
+        flash("Participant does not belong to this tournament.")
+        return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
     # 이미 처리된 신청이면 그대로 반환
     if p.status != "PENDING":
         flash("This participant is not in PENDING status.")
-        return redirect(url_for("admin_participants"))
+        return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
     score_key = f"input_score_{participant_id}"
     input_score_str = request.form.get(score_key, "").strip()
@@ -1143,13 +1165,13 @@ def admin_approve_participant(participant_id):
             actual = int(input_score_str)
         except ValueError:
             flash("Invalid score. Please input an integer.")
-            return redirect(url_for("admin_participants"))
+            return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
         p.user.actual_score = actual
         p.status = "APPROVED"
         db.session.commit()
         flash("Approved with input score.")
-        return redirect(url_for("admin_participants"))
+        return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
     # 2) 입력 점수가 없으면 Estimated Score 사용
     est = calculate_estimated_score(p.user)
@@ -1163,21 +1185,30 @@ def admin_approve_participant(participant_id):
         # Estimated score도 없으면 승인하지 않음
         flash("No input score and no estimated score; approval skipped.")
 
-    return redirect(url_for("admin_participants"))
+    return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
 
-@app.route("/admin/participants/<int:participant_id>/reject", methods=["POST"])
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/admin/tournaments/<int:tournament_id>/participants/<int:participant_id>/reject", methods=["POST"])
 @login_required(role="ADMIN")
-def admin_reject_participant(participant_id):
+def admin_reject_participant(tournament_id, participant_id):
+    tournament = get_tournament_or_404(tournament_id) # 🚨 추가
     p = Participant.query.get_or_404(participant_id)
+    
+    if p.tournament_id != tournament.id:
+        flash("Participant does not belong to this tournament.")
+        return redirect(url_for("admin_participants", tournament_id=tournament_id))
+
     p.status = "REJECTED"
     db.session.commit()
-    return redirect(url_for("admin_participants"))
+    return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
 
-@app.route("/admin/participants/bulk-approve", methods=["POST"])
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/admin/tournaments/<int:tournament_id>/participants/bulk-approve", methods=["POST"])
 @login_required(role="ADMIN")
-def admin_bulk_approve_participants():
+def admin_bulk_approve_participants(tournament_id):
+    tournament = get_tournament_or_404(tournament_id) # 🚨 추가
     id_list = request.form.getlist("participant_id")
 
     approved_count = 0
@@ -1190,7 +1221,7 @@ def admin_bulk_approve_participants():
             continue
 
         p = Participant.query.get(participant_id)
-        if not p or p.status != "PENDING":
+        if not p or p.status != "PENDING" or p.tournament_id != tournament.id: # 🚨 추가: 토너먼트 ID 일치 확인
             continue
 
         score_key = f"input_score_{participant_id}"
@@ -1223,17 +1254,14 @@ def admin_bulk_approve_participants():
 
     db.session.commit()
     flash(f"Bulk approve finished. Approved: {approved_count}, skipped (no score): {skipped_count}")
-    return redirect(url_for("admin_participants"))
+    return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
 
-@app.route("/admin/teams", methods=["GET", "POST"])
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/admin/tournaments/<int:tournament_id>/teams", methods=["GET", "POST"])
 @login_required(role="ADMIN")
-def admin_teams():
-    tournament = Tournament.query.first()
-    if not tournament:
-        flash("No tournament found.")
-        return redirect(url_for("admin_dashboard"))
-
+def admin_teams(tournament_id):
+    tournament = get_tournament_or_404(tournament_id) # 🚨 수정: get_tournament_or_404 사용
     teams = Team.query.filter_by(tournament_id=tournament.id).all()
 
     if request.method == "POST":
@@ -1259,7 +1287,7 @@ def admin_teams():
 
         db.session.commit()
         flash("Teams updated.")
-        return redirect(url_for("admin_teams"))
+        return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
     for team in teams:
         base_total = 0
@@ -1281,20 +1309,19 @@ def admin_teams():
         team.base_total = base_total
         team.weighted_total = weighted_total
 
-    return render_template("admin/teams.html", teams=teams)
+    return render_template("admin/teams.html", teams=teams, tournament=tournament) # 🚨 수정: 토너먼트 전달
 
 
-@app.route("/admin/teams/auto-generate", methods=["POST"])
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/admin/tournaments/<int:tournament_id>/teams/auto-generate", methods=["POST"])
 @login_required(role="ADMIN")
-def admin_auto_generate_teams():
-    tournament = Tournament.query.first()
-    if not tournament:
-        flash("No tournament found.")
-        return redirect(url_for("admin_teams"))
+def admin_auto_generate_teams(tournament_id):
+    tournament = get_tournament_or_404(tournament_id) # 🚨 수정: get_tournament_or_404 사용
 
     # 기존 팀/팀원 삭제
-    TeamMember.query.delete()
-    Team.query.filter_by(tournament_id=tournament.id).delete()
+    TeamMember.query.filter(TeamMember.team.has(tournament_id=tournament.id)).delete(synchronize_session=False)
+    Team.query.filter_by(tournament_id=tournament.id).delete(synchronize_session=False)
+    Match.query.filter_by(tournament_id=tournament.id).delete(synchronize_session=False) # 🚨 추가: 매치도 같이 삭제
     db.session.commit()
 
     # 승인된 참가자만 사용
@@ -1304,7 +1331,7 @@ def admin_auto_generate_teams():
 
     if not approved:
         flash("No approved participants to generate teams.")
-        return redirect(url_for("admin_teams"))
+        return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
     # 포지션/점수 정보 준비
     players = []  # participant 단위 리스트
@@ -1333,7 +1360,7 @@ def admin_auto_generate_teams():
 
     if not players:
         flash("No players with valid roles to generate teams.")
-        return redirect(url_for("admin_teams"))
+        return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
     total_players = len(players)
 
@@ -1357,7 +1384,7 @@ def admin_auto_generate_teams():
     team_count = min(max_by_count, max_by_roles)
     if team_count <= 0:
         flash("Not enough players to form at least one full team of 5 with all roles.")
-        return redirect(url_for("admin_teams"))
+        return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
     # 팀 데이터 구조 초기화
     teams_data = []
@@ -1480,7 +1507,7 @@ def admin_auto_generate_teams():
 
     db.session.commit()
     flash("Teams generated with role balancing and score heuristic (max 5 players per team).")
-    return redirect(url_for("admin_teams"))
+    return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
 
 @app.route("/admin/permissions", methods=["GET", "POST"])
@@ -1542,20 +1569,23 @@ def admin_handle_user_approval(user_id, action):
     return redirect(url_for("admin_user_approvals"))
 
 
-@app.route("/admin/tournament", methods=["GET", "POST"])
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/admin/tournaments/<int:tournament_id>", methods=["GET", "POST"])
 @login_required(role="ADMIN")
-def admin_tournament():
-    tournament = Tournament.query.first()
-    if not tournament:
-        # 최초 1회 자동 생성
-        tournament = Tournament(name="Main Tournament")
-        db.session.add(tournament)
-        db.session.commit()
+def admin_tournament(tournament_id):
+    tournament = get_tournament_or_404(tournament_id) # 🚨 수정: get_tournament_or_404 사용
 
     if request.method == "POST":
         t_type = request.form.get("type", "").strip()
-        if t_type in ("KNOCKOUT", "LEAGUE", "LEAGUE_FINAL"):
-            tournament.type = t_type
+        status = request.form.get("status", "").strip()
+        
+        # 🚨 수정된 로직: Status가 OPEN일 때만 Type 변경 허용
+        if t_type and t_type in ("KNOCKOUT", "LEAGUE", "LEAGUE_FINAL"):
+            
+            if tournament.status == "OPEN":
+                tournament.type = t_type
+            elif tournament.type != t_type:
+                flash("토너먼트 유형(Type)은 상태가 OPEN일 때만 변경할 수 있습니다.")
 
         status = request.form.get("status", "").strip()
         if status in ("OPEN", "IN_PROGRESS", "FINISHED"):
@@ -1563,12 +1593,15 @@ def admin_tournament():
 
         db.session.commit()
         flash("Tournament settings updated.")
-        return redirect(url_for("admin_tournament"))
+        return redirect(url_for("admin_tournament", tournament_id=tournament_id))
 
     # 현재 생성된 경기들
     matches = Match.query.filter_by(tournament_id=tournament.id).order_by(
         Match.stage, Match.round_no, Match.match_no
     ).all()
+
+    # 🚨 수정: 이론적 라운드 수 계산
+    total_rounds = calculate_theoretical_rounds(tournament_id)
 
     # 리그 순위 계산 (LEAGUE 또는 LEAGUE_FINAL 일 때)
     league_standings = None
@@ -1581,18 +1614,17 @@ def admin_tournament():
     return render_template("admin/tournament.html", 
         tournament=tournament, 
         matches=matches,
-        winner_team=winner_team, # 템플릿에 전달
-        league_standings=league_standings, # 템플릿에 추가 전달
+        winner_team=winner_team,
+        league_standings=league_standings,
+        total_rounds=total_rounds, # 🚨 새로운 변수 전달
     )
 
 
-@app.route("/admin/tournament/generate_schedule", methods=["POST"])
+# 🚨 수정: 토너먼트 ID를 인수로 받도록 변경
+@app.route("/admin/tournaments/<int:tournament_id>/generate_schedule", methods=["POST"])
 @login_required(role="ADMIN")
-def admin_generate_schedule():
-    tournament = Tournament.query.first()
-    if not tournament:
-        flash("No tournament found.")
-        return redirect(url_for("admin_tournament"))
+def admin_generate_schedule(tournament_id):
+    tournament = get_tournament_or_404(tournament_id) # 🚨 수정: get_tournament_or_404 사용
 
     # 기존 Match 삭제
     Match.query.filter_by(tournament_id=tournament.id).delete()
@@ -1601,7 +1633,7 @@ def admin_generate_schedule():
     teams = Team.query.filter_by(tournament_id=tournament.id).all()
     if len(teams) < 2:
         flash("Need at least 2 teams to generate schedule.")
-        return redirect(url_for("admin_tournament"))
+        return redirect(url_for("admin_tournament", tournament_id=tournament_id))
 
     if tournament.type == "KNOCKOUT":
         generate_knockout_initial_round(tournament, teams)
@@ -1616,15 +1648,16 @@ def admin_generate_schedule():
     tournament.status = "IN_PROGRESS"
     db.session.commit()
     flash("Schedule generated.")
-    return redirect(url_for("admin_tournament"))
+    return redirect(url_for("admin_tournament", tournament_id=tournament_id))
 
 
+# (admin_match_report는 match_id만으로 충분하며, 내부에서 tournament를 찾습니다.)
 @app.route("/admin/matches/<int:match_id>/report", methods=["GET", "POST"])
 @login_required(role="ADMIN") # 관리자 권한만 확인
 def admin_match_report(match_id):
     # 매치 객체를 'm' 변수에 가져옵니다.
     m = Match.query.get_or_404(match_id)
-    tournament = Tournament.query.get(m.tournament_id)
+    tournament = get_tournament_or_404(m.tournament_id) # 🚨 수정: get_tournament_or_404 사용
 
     # 관리자 라우트이므로, 팀 소속이나 팀장 여부를 확인하지 않습니다.
 
@@ -1676,11 +1709,28 @@ def admin_match_report(match_id):
         progress_tournament_if_needed(tournament)
 
         flash("Match result updated successfully by Admin.")
-        # 업데이트 후 관리자 메인 페이지로 리다이렉트
-        return redirect(url_for("admin_tournament"))
+        # 업데이트 후 관리자 토너먼트 상세 페이지로 리다이렉트
+        return redirect(url_for("admin_tournament", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     # GET 요청 시, 기존 사용자 템플릿(score 입력 폼)을 재사용하고 'match'로 전달합니다.
     return render_template("admin/match_report.html", match=m)
+
+
+# 🚨 새로운 라우트 이름: tournament_history
+@app.route("/tournament/<int:tournament_id>/history")
+@login_required() # 모든 로그인 사용자에게 접근 허용
+def tournament_history(tournament_id):
+    tournament = get_tournament_or_404(tournament_id) 
+
+    data = tournament_history_data_loader(tournament)
+
+    data['total_rounds'] = calculate_theoretical_rounds(tournament_id)
+    
+    # 템플릿 렌더링
+    return render_template(
+        "tournament_history.html",
+        **data 
+    )
 
 
 if __name__ == "__main__":

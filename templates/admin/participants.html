@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Participants Management</h2>
+{# 🚨 수정: 토너먼트 이름 표시 #}
+<h2>Participants Management ({{ tournament.name }})</h2>
 
 {% if participants|length > 0 %}
-<form action="{{ url_for('admin_bulk_approve_participants') }}" method="post">
+{# 🚨 수정: tournament_id 전달 #}
+<form action="{{ url_for('admin_bulk_approve_participants', tournament_id=tournament.id) }}" method="post">
     <table border="1" cellpadding="4">
         <tr>
             <th>Apply No.</th>
@@ -48,14 +50,16 @@
             </td>
 
             <td>
+                {# 🚨 수정: tournament_id 전달 #}
                 <button type="submit"
-                        formaction="{{ url_for('admin_approve_participant', participant_id=p.id) }}"
+                        formaction="{{ url_for('admin_approve_participant', tournament_id=tournament.id, participant_id=p.id) }}"
                         formmethod="post">
                     Approve
                 </button>
 
+                {# 🚨 수정: tournament_id 전달 #}
                 <button type="submit"
-                        formaction="{{ url_for('admin_reject_participant', participant_id=p.id) }}"
+                        formaction="{{ url_for('admin_reject_participant', tournament_id=tournament.id, participant_id=p.id) }}"
                         formmethod="post">
                     Reject
                 </button>

@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Teams Management</h2>
+{# 🚨 추가: 토너먼트 이름 표시 #}
+<h2>Teams Management ({{ tournament.name }})</h2>
 
-<form action="{{ url_for('admin_auto_generate_teams') }}" method="post" style="margin-bottom: 1rem;">
+{# 🚨 수정: tournament_id 전달 #}
+<form action="{{ url_for('admin_auto_generate_teams', tournament_id=tournament.id) }}" method="post" style="margin-bottom: 1rem;">
     <p>Auto-generate를 실행하면 현재 팀 구성과 팀명이 모두 초기화됩니다.</p>
     <button type="submit">Auto-generate Teams</button>
 </form>
@@ -10,7 +12,8 @@
 {% if teams|length > 0 %}
     {# 폼을 각 팀 섹션 안으로 이동 #}
     {% for team in teams %}
-    <form action="{{ url_for('admin_teams') }}" method="post">
+    {# 🚨 수정: tournament_id 전달 #}
+    <form action="{{ url_for('admin_teams', tournament_id=tournament.id) }}" method="post">
 
         {% for tm in team.members %}
             {% set u = tm.participant.user %}
@@ -44,7 +47,7 @@
                 Team Weighted Score Sum: {{ "%.1f"|format(team.weighted_total) }}
             </p>
 
-            <table border="1" cellpadding="4">
+            <table border="1" cellpadding="4" class="team-member-list">
                 <tr>
                     <th>Name</th>
                     <th>Riot ID</th>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Admin Dashboard</h2>
+<h2>Dashboard</h2>
 <hr>
 
 {# 📊 System Overview 섹션을 활성화하고 표로 변경 #}
@@ -29,47 +29,66 @@
     </tr>
 </table>
 
+<hr>
 
-{% if tournament %}
-    <h3>🏆 Current Tournament: {{ tournament.name }}</h3>
-    <p>Status: <span style="font-weight: bold;">{{ tournament.status }}</span></p>
-    
-    <table border="1" cellpadding="5" style="max-width: 500px;">
-        <tr>
-            <th>Metric</th>
-            <th>Value</th>
-            <th>Action Link</th>
-        </tr>
-        <tr>
-            <td>Total Applications</td>
-            <td>{{ total_applications }}</td>
-            <td><a href="{{ url_for('admin_participants') }}">Manage Participants</a></td>
-        </tr>
-        <tr>
-            <td>Approved Participants</td>
-            <td><strong>{{ approved }}</strong></td>
-            <td></td>
-        </tr>
-        <tr>
-            <td>Total Teams Formed</td>
-            <td>{{ total_teams_count or "-" }}</td>
-            <td><a href="{{ url_for('admin_teams') }}">Manage Teams</a></td>
-        </tr>
-        <tr>
-            <td>Pending Matches</td>
-            <td>
-                {# FIX: 클래스 바인딩으로 변경 #}
-                {% set matches_class = 'status-critical' if pending_matches_count > 0 else 'status-ok' %}
-                <strong class="{{ matches_class }}">
-                    {{ pending_matches_count or "-" }}
-                </strong>
-            </td>
-            <td><a href="{{ url_for('admin_tournament') }}">View Schedule</a></td>
-        </tr>
-    </table>
-    
+{# 🚨 필터링 로직 추가: OPEN 또는 IN_PROGRESS인 토너먼트만 활성 목록으로 처리 #}
+{% set active_tournaments = tournaments | selectattr('status', 'in', ['OPEN', 'IN_PROGRESS']) | list %}
+{% set finished_tournaments = tournaments | selectattr('status', '==', 'FINISHED') | list %}
+
+{# 🚨 수정: 활성 토너먼트 목록만 표시 #}
+<h3>🏆 Active / Ongoing Tournaments ({{ active_tournaments|length }})</h3>
+{% if active_tournaments %}
+    {% for t in active_tournaments %}
+        <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 1.5rem;">
+            <h4>{{ t.name }} <small>(ID: {{ t.id }})</small></h4>
+            <p>Status: <span style="font-weight: bold;">{{ t.status }}</span></p>
+
+            <table border="1" cellpadding="5" style="max-width: 700px; margin-top: 0.5rem;">
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Action Link</th>
+                </tr>
+                <tr>
+                    <td>Total Applications</td>
+                    <td>{{ t.total_applications }}</td>
+                    <td><a href="{{ url_for('admin_participants', tournament_id=t.id) }}">Manage Participants</a></td>
+                </tr>
+                <tr>
+                    <td>Approved Participants</td>
+                    <td><strong>{{ t.approved }}</strong></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>Total Teams Formed</td>
+                    <td>{{ t.total_teams_count or "-" }}</td>
+                    <td><a href="{{ url_for('admin_teams', tournament_id=t.id) }}">Manage Teams</a></td>
+                </tr>
+                <tr>
+                    <td>Pending Matches</td>
+                    <td>
+                        {# FIX: 클래스 바인딩으로 변경 #}
+                        {% set matches_class = 'status-critical' if t.pending_matches_count > 0 else 'status-ok' %}
+                        <strong class="{{ matches_class }}">
+                            {{ t.pending_matches_count or "-" }}
+                        </strong>
+                    </td>
+                    <td><a href="{{ url_for('admin_tournament', tournament_id=t.id) }}">View Schedule</a></td>
+                </tr>
+            </table>
+        </div>
+    {% endfor %}
 {% else %}
-    <p>No tournament available. System is idle.</p>
+    <div class="access-box" style="margin-top: 10px;">
+        <p style="margin-bottom: 1rem;">현재 진행 중이거나 신청 가능한 토너먼트가 없습니다.</p>
+        <p>
+            <a href="{{ url_for('admin_tournaments') }}" class="btn-primary-access">
+                토너먼트 관리 페이지로 이동
+            </a>
+        </p>
+    </div>
 {% endif %}
+
+<hr>
 
 {% endblock %}

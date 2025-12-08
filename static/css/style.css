@@ -174,6 +174,10 @@ table a {
 table a:hover {
     text-decoration: underline;
 }
+/* 🚨 추가: 모든 테이블 내 링크의 :visited 색상을 기본 색상(#007bff)으로 강제 */
+table a:visited {
+    color: #007bff;
+}
 
 /* 6. Flash Messages */
 .flash-messages ul {
@@ -389,15 +393,15 @@ table.user-list-table td:nth-child(4) {
 
 /* 사용자 대시보드 애플리케이션 상태 색상 정의 */
 .status-approved {
-    color: green; /* APPROVED 상태 */
+    color: green !important; /* APPROVED 상태 */
 }
 
 .status-pending {
-    color: orange; /* PENDING 상태 */
+    color: orange !important; /* PENDING 상태 */
 }
 
 .status-rejected {
-    color: red; /* REJECTED 상태 */
+    color: red !important; /* REJECTED 상태 */
 }
 
 /* Admin Dashboard Status Colors */
@@ -407,4 +411,181 @@ table.user-list-table td:nth-child(4) {
 
 .status-critical {
     color: orange; /* 1건 이상일 때 (경고) */
+}
+
+/* 9. Dashboard Access Box (New Style) */
+.access-box {
+    padding: 20px;
+    border: 2px solid #007bff; /* Blue border */
+    background-color: #e6f7ff; /* Light blue background */
+    margin-bottom: 20px;
+    border-radius: 8px;
+    text-align: center; /* Center the content inside the box */
+}
+.access-box h3 {
+    margin-top: 0;
+    color: #007bff;
+    font-size: 1.5rem;
+}
+.access-box a.btn-primary-access {
+    display: inline-block;
+    background-color: #007bff;
+    color: white;
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+.access-box a.btn-primary-access:hover {
+    background-color: #0056b3;
+    text-decoration: none;
+}
+
+
+/* 10. Team Member List Table (New Style for Fixed Layout) */
+table.team-member-list {
+    table-layout: fixed; /* 테이블 레이아웃 고정 */
+    width: 100%;
+}
+
+/* 1. Name */
+table.team-member-list th:nth-child(1),
+table.team-member-list td:nth-child(1) {
+    width: 18%; 
+}
+
+/* 2. Riot ID */
+table.team-member-list th:nth-child(2),
+table.team-member-list td:nth-child(2) {
+    width: 25%;
+}
+
+/* 3. Assigned Role */
+table.team-member-list th:nth-child(3),
+table.team-member-list td:nth-child(3) {
+    width: 12%;
+}
+
+/* 4. Primary / Sec1 / Sec2 */
+table.team-member-list th:nth-child(4),
+table.team-member-list td:nth-child(4) {
+    width: 20%;
+}
+
+/* 5. Base Score */
+table.team-member-list th:nth-child(5),
+table.team-member-list td:nth-child(5) {
+    width: 12%;
+}
+
+/* 6. Weighted Score */
+table.team-member-list th:nth-child(6),
+table.team-member-list td:nth-child(6) {
+    width: 13%;
+}
+
+/* 11. Admin Tournament List Table */
+table.tournament-list-table-admin {
+    table-layout: fixed; /* 테이블 레이아웃 고정 */
+    width: 100%;
+}
+
+/* 1. ID */
+table.tournament-list-table-admin th:nth-child(1),
+table.tournament-list-table-admin td:nth-child(1) {
+    width: 8%; 
+}
+
+/* 2. Name */
+table.tournament-list-table-admin th:nth-child(2),
+table.tournament-list-table-admin td:nth-child(2) {
+    width: 35%;
+}
+
+/* 3. Type */
+table.tournament-list-table-admin th:nth-child(3),
+table.tournament-list-table-admin td:nth-child(3) {
+    width: 15%;
+}
+
+/* 4. Status */
+table.tournament-list-table-admin th:nth-child(4),
+table.tournament-list-table-admin td:nth-child(4) {
+    width: 12%;
+}
+
+/* 5. Actions */
+table.tournament-list-table-admin th:nth-child(5),
+table.tournament-list-table-admin td:nth-child(5) {
+    width: 30%;
+}
+
+/* 12. User Active Tournament List Table (6 columns) */
+table.tournament-list-active-user {
+    table-layout: fixed; /* 테이블 레이아웃 고정 */
+    width: 100%;
+}
+/* 1. ID */
+table.tournament-list-active-user th:nth-child(1),
+table.tournament-list-active-user td:nth-child(1) {
+    width: 8%; 
+}
+/* 2. Name */
+table.tournament-list-active-user th:nth-child(2),
+table.tournament-list-active-user td:nth-child(2) {
+    width: 25%;
+}
+/* 3. Type */
+table.tournament-list-active-user th:nth-child(3),
+table.tournament-list-active-user td:nth-child(3) {
+    width: 10%;
+}
+/* 4. Status */
+table.tournament-list-active-user th:nth-child(4),
+table.tournament-list-active-user td:nth-child(4) {
+    width: 12%;
+}
+/* 5. My Status */
+table.tournament-list-active-user th:nth-child(5),
+table.tournament-list-active-user td:nth-child(5) {
+    width: 15%;
+}
+/* 6. Actions */
+table.tournament-list-active-user th:nth-child(6),
+table.tournament-list-active-user td:nth-child(6) {
+    width: 30%;
+}
+
+/* 13. User Finished Tournament List Table (5 columns) */
+table.tournament-list-finished-user {
+    table-layout: fixed; /* 테이블 레이아웃 고정 */
+    width: 100%;
+}
+/* 1. ID */
+table.tournament-list-finished-user th:nth-child(1),
+table.tournament-list-finished-user td:nth-child(1) {
+    width: 8%; 
+}
+/* 2. Name */
+table.tournament-list-finished-user th:nth-child(2),
+table.tournament-list-finished-user td:nth-child(2) {
+    width: 40%;
+}
+/* 3. Type */
+table.tournament-list-finished-user th:nth-child(3),
+table.tournament-list-finished-user td:nth-child(3) {
+    width: 15%;
+}
+/* 4. Status */
+table.tournament-list-finished-user th:nth-child(4),
+table.tournament-list-finished-user td:nth-child(4) {
+    width: 15%;
+}
+/* 5. Actions */
+table.tournament-list-finished-user th:nth-child(5),
+table.tournament-list-finished-user td:nth-child(5) {
+    width: 22%;
 }
