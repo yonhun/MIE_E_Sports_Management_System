@@ -1,11 +1,11 @@
 import math
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
+from itertools import combinations
+from datetime import datetime, timedelta
 
 from config import Config
 from models import db, User, Tournament, Participant, Team, TeamMember, Match
-from itertools import combinations
-
 from riot_api import get_summoner_ranks
 from score import calculate_estimated_score
 
@@ -22,7 +22,7 @@ def create_app():
         db.create_all()
 
         # 필요하다면 기본 관리자 계정 생성 (예: admin / admin)
-        if User.query.filter_by(username="admin").first() is None:
+        if db.session.get(User, 1) is None:
             admin_user = User(
                 username="admin",
                 password_hash=generate_password_hash("admin"),
@@ -44,13 +44,13 @@ def current_user():
     user_id = session.get("user_id")
     if not user_id:
         return None
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
     
     return user
 
 # 🚨 추가: 토너먼트 ID를 기반으로 객체를 가져오는 헬퍼 함수
 def get_tournament_or_404(tournament_id):
-    t = Tournament.query.get(tournament_id)
+    t = db.session.get(Tournament, tournament_id)
     if not t:
         from flask import abort
         abort(404, description="Tournament not found")
@@ -72,7 +72,7 @@ def login_required(role=None):
             
             # 🚨 수정: 세션의 활성 역할이 필요한 역할과 일치하는지 확인
             if role and active_role != role:
-                flash("Permission denied. You are logged in as " + active_role + ".")
+                flash("권한이 거부되었습니다. 현재 권한은 " + active_role + "입니다.")
                 return redirect(url_for("login_page"))
             
             return fn(*args, **kwargs)
@@ -122,6 +122,59 @@ def get_member_weighted_score(user, assigned_role: str | None) -> float:
     base = get_user_score(user)
     w = get_member_weight(user, assigned_role)
     return base * w
+
+
+def update_user_riot_ranks(user: User):
+    """
+    유저의 Riot ID를 사용하여 최신 랭크 정보를 조회하고 User 객체를 업데이트합니다.
+    (최근 24시간 이내에 갱신된 경우 API 호출을 건너뜁니다.)
+    """
+    if not user.summoner_riot_id:
+        return
+
+    # 🚨 수정된 로직: 24시간 Rate Limiting 체크
+    if user.last_rank_update_at and (datetime.now() - user.last_rank_update_at) < timedelta(hours=24):
+        # 24시간이 지나지 않았으므로 갱신을 건너뜁니다.
+        return
+        
+    solo_tier, flex_tier, puuid = get_summoner_ranks(user.summoner_riot_id)
+    
+    needs_commit = False
+    
+    # Riot ID가 설정되어 있지만 puuid가 없을 경우를 대비하여 갱신합니다.
+    if user.puuid != puuid:
+        user.puuid = puuid
+        needs_commit = True
+        
+    # 솔로 랭크 티어 갱신
+    if user.solo_tier != solo_tier:
+        user.solo_tier = solo_tier
+        needs_commit = True
+
+    # 자유 랭크 티어 갱신
+    if user.flex_tier != flex_tier:
+        user.flex_tier = flex_tier
+        needs_commit = True
+        
+    # tier 필드 업데이트 (솔로 우선, 없으면 플렉스)
+    new_tier = None
+    if solo_tier:
+        new_tier = solo_tier
+    elif flex_tier:
+        new_tier = flex_tier
+        
+    if user.tier != new_tier:
+        user.tier = new_tier
+        needs_commit = True
+    
+    if needs_commit:
+        # 갱신이 발생한 경우에만 갱신 시각을 기록
+        user.last_rank_update_at = datetime.now()
+        db.session.commit()
+    elif user.puuid:
+        # 갱신은 필요 없지만 API 호출에 성공한 경우, 타임스탬프만 업데이트하여 API 호출 주기 초기화
+        user.last_rank_update_at = datetime.now()
+        db.session.commit()
 
 
 def get_match_format(m: Match, tournament: Tournament):
@@ -316,7 +369,7 @@ def calculate_tournament_winner(tournament: Tournament) -> Team | None:
         # 리그전의 경우, calculate_league_standings를 사용합니다.
         standings = calculate_league_standings(tournament)
         if standings:
-            return Team.query.get(standings[0]['team_id'])
+            return db.session.get(Team, standings[0]['team_id'])
 
     return None
 
@@ -488,16 +541,6 @@ def generate_knockout_initial_round(tournament, teams):
     # 부전승 팀은 'progress_tournament_if_needed'에서 자동으로 다음 라운드 진출 처리됩니다.
 
 
-@app.context_processor
-def inject_helpers():
-    return dict(
-        calculate_estimated_score=calculate_estimated_score,
-        get_user_score=get_user_score,
-        get_member_weighted_score=get_member_weighted_score,
-        max=max,
-    )
-
-
 def tournament_history_data_loader(tournament):
     # Matches
     matches = Match.query.filter_by(tournament_id=tournament.id).order_by(Match.stage, Match.round_no, Match.match_no).all()
@@ -553,12 +596,20 @@ def calculate_theoretical_rounds(tournament_id):
     Calculates the total number of rounds required for a complete knockout bracket
     based on the number of teams. N_rounds = ceil(log2(N_teams)).
     """
-    # NOTE: Team.query.filter_by는 models.py의 Team 모델에 기반합니다.
     teams_count = Team.query.filter_by(tournament_id=tournament_id).count()
     if teams_count < 2:
         return 0
-    # math.ceil(math.log2(teams_count))
     return math.ceil(math.log2(teams_count))
+
+
+@app.context_processor
+def inject_helpers():
+    return dict(
+        calculate_estimated_score=calculate_estimated_score,
+        get_user_score=get_user_score,
+        get_member_weighted_score=get_member_weighted_score,
+        max=max,
+    )
 
 
 # -------------------- Auth --------------------
@@ -581,7 +632,7 @@ def login():
     # Case 1: Role Selection is being submitted (Second Step)
     if selected_role:
         if not user:
-            flash("User not found for role selection.")
+            flash("권한 선택을 위한 사용자를 찾을 수 없습니다.")
             return redirect(url_for("login_page"))
         
         # 🚨 추가/수정: 승인 상태 확인 (2단계)
@@ -592,17 +643,17 @@ def login():
                 # 메시지를 보여주기 위해 flash 후 계정 삭제
                 db.session.delete(user)
                 db.session.commit()
-                flash(f"Login failed. Your account registration was rejected and has been permanently deleted. Please register again if you wish to re-apply.")
+                flash(f"로그인에 실패했습니다. 회원님의 계정 등록 요청이 거부되어 영구적으로 삭제되었습니다. 다시 신청하려면 재등록해주세요.")
                 return redirect(url_for("login_page"))
                 
             # PENDING 상태: 대기 메시지
-            flash(f"Login failed. Your account status is: {user.approval_status}. Waiting for Admin approval.")
+            flash(f"로그인에 실패했습니다. 회원님의 계정 상태는 '{user.approval_status}'입니다. 관리자 승인을 기다려주세요.")
             return redirect(url_for("login_page"))
             
         all_roles = [r.strip() for r in user.role.split(',') if r.strip()]
 
         if selected_role not in all_roles:
-            flash("Invalid role selection.")
+            flash("유효하지 않은 권한 선택입니다.")
             return redirect(url_for("login_page"))
             
         active_role = selected_role
@@ -611,7 +662,7 @@ def login():
     else:
         # 1단계: 인증 실패
         if not user or not check_password_hash(user.password_hash, password):
-            flash("Invalid username or password")
+            flash("유효하지 않은 아이디 또는 비밀번호입니다.")
             return redirect(url_for("login_page"))
 
         # 🚨 추가/수정: 승인 상태 확인 (1단계)
@@ -622,11 +673,11 @@ def login():
                 # 메시지를 보여주기 위해 flash 후 계정 삭제
                 db.session.delete(user)
                 db.session.commit()
-                flash(f"Login failed. Your account registration was rejected and has been permanently deleted. Please register again if you wish to re-apply.")
+                flash(f"로그인에 실패했습니다. 회원님의 계정 등록 요청이 거부되어 영구적으로 삭제되었습니다. 다시 신청하려면 재등록해주세요.")
                 return redirect(url_for("login_page"))
                 
             # PENDING 상태: 대기 메시지
-            flash(f"Login failed. Your account status is: {user.approval_status}. Waiting for Admin approval.")
+            flash(f"로그인에 실패했습니다. 회원님의 계정 상태는 '{user.approval_status}'입니다. 관리자 승인을 기다려주세요.")
             return redirect(url_for("login_page"))
         
         # 1단계: 인증 성공 (APPROVED)
@@ -667,11 +718,11 @@ def register():
     initial_role_selection = request.form.get("initial_role", "USER").upper()
 
     if not username or not password:
-        flash("Username and password are required.")
+        flash("아이디와 비밀번호는 필수 입력 사항입니다.")
         return redirect(url_for("register"))
 
     if User.query.filter_by(username=username).first():
-        flash("Username already exists.")
+        flash("이미 존재하는 아이디입니다.")
         return redirect(url_for("register"))
 
     role_to_save = initial_role_selection
@@ -687,7 +738,7 @@ def register():
     db.session.commit()
 
     # 🚨 수정: 승인 대기 메시지로 변경
-    flash("Registration submitted. Your account is pending administrator approval.")
+    flash("회원가입이 완료되었습니다. 관리자 승인을 기다려주세요.")
     return redirect(url_for("login_page"))
 
 
@@ -704,8 +755,21 @@ def logout():
 def user_dashboard():
     user = current_user()
     
+    # 🚨 추가: 대시보드 접근 시 최신 랭크 정보 자동 업데이트
+    update_user_riot_ranks(user)
+    
     # 🚨 수정: 토너먼트 목록을 가져옵니다.
     tournaments = Tournament.query.all()
+    
+    # 🚨 추가: 사용자의 활성 참여 토너먼트 상태를 확인 (APPROVED + OPEN/IN_PROGRESS)
+    active_participants = Participant.query.filter_by(
+        user_id=user.id, 
+        status="APPROVED"
+    ).join(Tournament).filter(
+        Tournament.status.in_(["OPEN", "IN_PROGRESS"])
+    ).all()
+    
+    has_active_tournaments = len(active_participants) > 0 # 새로운 플래그
     
     # 대시보드에서는 신청 정보 대신 토너먼트 목록만 보여줍니다.
     # 신청 정보는 /user/tournaments 페이지로 이동합니다.
@@ -714,6 +778,8 @@ def user_dashboard():
         "user/dashboard.html",
         user=user,
         tournaments=tournaments, # 토너먼트 목록을 전달합니다.
+        # 🚨 새로운 플래그 전달
+        has_active_tournaments=has_active_tournaments, 
     )
 
 @app.route("/user/profile", methods=["GET", "POST"])
@@ -738,7 +804,7 @@ def user_profile():
                 User.id != user.id
             ).first()
             if existing:
-                flash("This student ID is already used by another user.")
+                flash("이미 다른 사용자가 사용 중인 학번입니다.")
                 return redirect(url_for("user_profile"))
 
         # Riot ID 중복 체크 (원하면 유지)
@@ -748,7 +814,7 @@ def user_profile():
                 User.id != user.id
             ).first()
             if existing_riot:
-                flash("This Riot ID is already used by another user.")
+                flash("이미 다른 사용자가 사용 중인 Riot ID입니다.")
                 return redirect(url_for("user_profile"))
 
         user.student_id = student_id or None
@@ -779,7 +845,7 @@ def user_profile():
 
         db.session.commit()
 
-        flash("Profile updated.")
+        flash("프로필이 업데이트되었습니다.")
         return redirect(url_for("user_profile"))
 
     return render_template("user/profile.html", user=user)
@@ -817,21 +883,21 @@ def user_apply(tournament_id):
         # 신청 가능 여부 확인
         # ----------------------------------------------------
         if tournament.status not in ("OPEN",):
-            flash(f"Application is closed. The tournament is currently {tournament.status}.")
+            flash(f"신청이 마감되었습니다. 토너먼트 상태는 {tournament.status}입니다.")
             return redirect(url_for("user_apply", tournament_id=tournament_id))
 
         # 프로필 필수 정보 확인
         if not user.student_id or not user.real_name:
-            flash("Please fill in your student ID and name in the profile before applying.")
+            flash("신청 전에 프로필에 학번과 이름을 입력해주세요.")
             return redirect(url_for("user_profile"))
 
         if not user.summoner_riot_id:
-            flash("Please set your Riot ID (nickname#tag) in the profile before applying.")
+            flash("신청 전에 프로필에 Riot ID(닉네임#태그)를 설정해주세요.")
             return redirect(url_for("user_profile"))
 
         # 포지션 3개 모두 필수
         if not user.primary_role or not user.secondary_role1 or not user.secondary_role2:
-            flash("Please set your primary and secondary roles in the profile before applying.")
+            flash("신청 전에 프로필에 주/보조 포지션을 모두 설정해주세요.")
             return redirect(url_for("user_profile"))
 
         existing = Participant.query.filter_by(
@@ -839,7 +905,7 @@ def user_apply(tournament_id):
         ).first()
 
         if existing:
-            flash(f"You have already applied. Current status: {existing.status}")
+            flash(f"이미 신청하셨습니다. 현재 상태: {existing.status}")
             return redirect(url_for("user_apply", tournament_id=tournament_id))
 
         p = Participant(
@@ -850,7 +916,7 @@ def user_apply(tournament_id):
         db.session.add(p)
         db.session.commit()
 
-        flash("Application submitted.")
+        flash("참가 신청이 완료되었습니다.")
         return redirect(url_for("user_apply", tournament_id=tournament_id))
 
     # GET 요청 처리
@@ -917,23 +983,23 @@ def user_team_rename(tournament_id):
     ).first()
 
     if not participant or not participant.team_membership:
-        flash("You are not assigned to any team.")
+        flash("팀에 배정되어 있지 않습니다.")
         return redirect(url_for("user_team", tournament_id=tournament_id))
 
     team = participant.team_membership.team
 
     if team.captain_user_id != user.id:
-        flash("Only the team captain can rename the team.")
+        flash("팀 주장만 팀 이름을 변경할 수 있습니다.")
         return redirect(url_for("user_team", tournament_id=tournament_id))
 
     new_name = request.form.get("team_name", "").strip()
     if not new_name:
-        flash("Team name cannot be empty.")
+        flash("팀 이름은 비워둘 수 없습니다.")
         return redirect(url_for("user_team", tournament_id=tournament_id))
 
     team.name = new_name
     db.session.commit()
-    flash("Team name updated.")
+    flash("팀 이름이 업데이트되었습니다.")
     return redirect(url_for("user_team", tournament_id=tournament_id))
 
 
@@ -985,17 +1051,17 @@ def user_match_report(match_id):
         user_id=user.id, tournament_id=tournament.id
     ).first()
     if not my_participant or not my_participant.team_membership:
-        flash("You are not in any team for this tournament.")
+        flash("이 대회의 어떤 팀에도 소속되어 있지 않습니다.")
         return redirect(url_for("user_matches", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     my_team = my_participant.team_membership.team
     if my_team.id not in (m.team1_id, m.team2_id):
-        flash("You are not a player in this match.")
+        flash("이 매치에 참가하는 선수가 아닙니다.")
         return redirect(url_for("user_matches", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     # 팀장 체크
     if my_team.captain_user_id != user.id:
-        flash("Only the team captain can report results.")
+        flash("팀 주장만 결과를 보고할 수 있습니다.")
         return redirect(url_for("user_matches", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     if request.method == "POST":
@@ -1003,7 +1069,7 @@ def user_match_report(match_id):
             s1 = int(request.form.get("team1_score", "0"))
             s2 = int(request.form.get("team2_score", "0"))
         except ValueError:
-            flash("Scores must be integers.")
+            flash("점수는 정수여야 합니다.")
             return redirect(url_for("user_match_report", match_id=match_id))
         
         # 경기 형식 가져오기: total_games, wins_needed, format_name
@@ -1012,19 +1078,19 @@ def user_match_report(match_id):
         # BoX 형식에 맞는지 검증
         if s1 < wins_needed and s2 < wins_needed:
             # 승리 조건을 충족하지 못한 경우 (예: Bo3에서 1:1, Bo5에서 2:2)
-            flash(f"Invalid score for {format_name}: At least one team must reach {wins_needed} wins.")
+            flash(f"{format_name}에 대한 유효하지 않은 점수입니다: 최소한 한 팀은 {wins_needed}승을 달성해야 합니다.")
             return redirect(url_for("user_match_report", match_id=match_id))
         
         # BoX 형식에 맞는지 검증
         if s1 + s2 > bestof:
             # 승리 조건을 충족하지 못한 경우 (예: Bo3에서 1:1, Bo5에서 2:2)
-            flash(f"Invalid score for {format_name}: Total match count cannot exceed {bestof}.")
+            flash(f"{format_name}에 대한 유효하지 않은 점수입니다: 총 매치 수는 {bestof}을 초과할 수 없습니다.")
             return redirect(url_for("user_match_report", match_id=match_id))
         
         # 둘 다 승리 조건을 충족할 수는 없음 (예: Bo3에서 2:2, Bo5에서 3:3)
         if s1 >= wins_needed and s2 >= wins_needed:
              # 일반적으로 이런 상황은 발생하지 않아야 하지만, 데이터 무결성을 위해 막음
-             flash(f"Invalid score for {format_name}: Both teams cannot meet or exceed {wins_needed} wins.")
+             flash(f"{format_name}에 대한 유효하지 않은 점수입니다: 양 팀 모두 {wins_needed}승 이상을 달성할 수 없습니다.")
              return redirect(url_for("user_match_report", match_id=match_id))
 
 
@@ -1044,7 +1110,7 @@ def user_match_report(match_id):
         # 다음 단계 진행 여부 체크 (KO / LEAGUE_FINAL 등)
         progress_tournament_if_needed(tournament)
 
-        flash("Match result submitted.")
+        flash("매치 결과가 제출되었습니다.")
         return redirect(url_for("user_matches", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 
     return render_template("user/match_report.html", match=m)
@@ -1079,6 +1145,13 @@ def team_detail(team_id):
 @app.route("/admin/dashboard")
 @login_required(role="ADMIN")
 def admin_dashboard():
+    
+    # 🚨 추가: 모든 Riot ID를 가진 유저의 랭크 정보 자동 업데이트
+    all_users_with_riot_id = User.query.filter(User.summoner_riot_id.isnot(None)).all()
+    for u in all_users_with_riot_id:
+        # Note: update_user_riot_ranks handles the DB commit if needed.
+        update_user_riot_ranks(u)
+
     # 1. 시스템 전체 사용자 및 승인 대기 사용자 수 계산
     total_users_count = User.query.count()
     pending_users_count = User.query.filter_by(approval_status="PENDING").count()
@@ -1110,9 +1183,9 @@ def admin_tournaments():
         t_type = request.form.get("type", "KNOCKOUT").strip()
         
         if not name:
-            flash("Tournament name is required.")
+            flash("대회 이름은 필수입니다.")
         elif t_type not in ("KNOCKOUT", "LEAGUE", "LEAGUE_FINAL"):
-            flash("Invalid tournament type.")
+            flash("유효하지 않은 대회 유형입니다.")
         else:
             t = Tournament(
                 name=name,
@@ -1121,7 +1194,7 @@ def admin_tournaments():
             )
             db.session.add(t)
             db.session.commit()
-            flash(f"Tournament '{name}' created.")
+            flash(f"대회 '{name}'이(가) 생성되었습니다.")
             return redirect(url_for("admin_tournaments"))
 
     tournaments = Tournament.query.all()
@@ -1144,16 +1217,19 @@ def admin_participants(tournament_id):
 @login_required(role="ADMIN")
 def admin_approve_participant(tournament_id, participant_id):
     tournament = get_tournament_or_404(tournament_id) # 🚨 추가
-    p = Participant.query.get_or_404(participant_id)
+    p = db.session.get(Participant, participant_id)
+    if not p:
+        from flask import abort
+        abort(404, description="Participant not found")
 
     # 🚨 추가: 토너먼트 ID 일치 확인
     if p.tournament_id != tournament.id:
-        flash("Participant does not belong to this tournament.")
+        flash("참가자가 이 대회에 소속되어 있지 않습니다.")
         return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
     # 이미 처리된 신청이면 그대로 반환
     if p.status != "PENDING":
-        flash("This participant is not in PENDING status.")
+        flash("이 참가자는 PENDING(승인 대기) 상태가 아닙니다.")
         return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
     score_key = f"input_score_{participant_id}"
@@ -1164,13 +1240,13 @@ def admin_approve_participant(tournament_id, participant_id):
         try:
             actual = int(input_score_str)
         except ValueError:
-            flash("Invalid score. Please input an integer.")
+            flash("유효하지 않은 점수입니다. 정수를 입력해주세요.")
             return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
         p.user.actual_score = actual
         p.status = "APPROVED"
         db.session.commit()
-        flash("Approved with input score.")
+        flash("입력된 점수로 승인되었습니다.")
         return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
     # 2) 입력 점수가 없으면 Estimated Score 사용
@@ -1180,10 +1256,10 @@ def admin_approve_participant(tournament_id, participant_id):
         p.user.actual_score = est
         p.status = "APPROVED"
         db.session.commit()
-        flash("Approved with estimated score.")
+        flash("예상 점수로 승인되었습니다.")
     else:
         # Estimated score도 없으면 승인하지 않음
-        flash("No input score and no estimated score; approval skipped.")
+        flash("입력된 점수와 예상 점수 모두 없어 승인이 건너뛰어졌습니다.")
 
     return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
@@ -1193,10 +1269,13 @@ def admin_approve_participant(tournament_id, participant_id):
 @login_required(role="ADMIN")
 def admin_reject_participant(tournament_id, participant_id):
     tournament = get_tournament_or_404(tournament_id) # 🚨 추가
-    p = Participant.query.get_or_404(participant_id)
+    p = db.session.get(Participant, participant_id)
+    if not p:
+        from flask import abort
+        abort(404, description="Participant not found")
     
     if p.tournament_id != tournament.id:
-        flash("Participant does not belong to this tournament.")
+        flash("참가자가 이 대회에 소속되어 있지 않습니다.")
         return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
     p.status = "REJECTED"
@@ -1220,7 +1299,7 @@ def admin_bulk_approve_participants(tournament_id):
         except ValueError:
             continue
 
-        p = Participant.query.get(participant_id)
+        p = db.session.get(Participant, participant_id)
         if not p or p.status != "PENDING" or p.tournament_id != tournament.id: # 🚨 추가: 토너먼트 ID 일치 확인
             continue
 
@@ -1253,7 +1332,43 @@ def admin_bulk_approve_participants(tournament_id):
             skipped_count += 1
 
     db.session.commit()
-    flash(f"Bulk approve finished. Approved: {approved_count}, skipped (no score): {skipped_count}")
+    flash(f"일괄 승인이 완료되었습니다. 승인: {approved_count}명, 건너뜀 (점수 없음): {skipped_count}명")
+    return redirect(url_for("admin_participants", tournament_id=tournament_id))
+
+
+# 🚨 추가: 승인된 참가자의 점수 수정
+@app.route("/admin/tournaments/<int:tournament_id>/participants/<int:participant_id>/score", methods=["POST"])
+@login_required(role="ADMIN")
+def admin_update_approved_score(tournament_id, participant_id):
+    tournament = get_tournament_or_404(tournament_id)
+    p = db.session.get(Participant, participant_id)
+    
+    if not p:
+        from flask import abort
+        abort(404, description="Participant not found")
+        
+    # 1. 토너먼트 ID 및 승인 상태 확인
+    if p.tournament_id != tournament.id or p.status != "APPROVED":
+        flash("유효하지 않은 요청: 참가자가 이 대회에 승인되지 않았습니다.")
+        return redirect(url_for("admin_participants", tournament_id=tournament_id))
+        
+    new_score_str = request.form.get("actual_score", "").strip()
+    
+    if not new_score_str:
+        flash("점수 입력란을 비워둘 수 없습니다.")
+        return redirect(url_for("admin_participants", tournament_id=tournament_id))
+        
+    try:
+        new_score = int(new_score_str)
+    except ValueError:
+        flash("유효하지 않은 점수입니다. 정수를 입력해주세요.")
+        return redirect(url_for("admin_participants", tournament_id=tournament_id))
+
+    # 2. User의 actual_score 업데이트
+    p.user.actual_score = new_score
+    db.session.commit()
+    
+    flash(f"사용자 '{p.user.real_name or p.user.username}'의 실제 점수가 {new_score}로 업데이트되었습니다.")
     return redirect(url_for("admin_participants", tournament_id=tournament_id))
 
 
@@ -1286,7 +1401,7 @@ def admin_teams(tournament_id):
                     team.captain_user_id = captain_id
 
         db.session.commit()
-        flash("Teams updated.")
+        flash("팀 정보가 업데이트되었습니다.")
         return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
     for team in teams:
@@ -1330,7 +1445,7 @@ def admin_auto_generate_teams(tournament_id):
     ).all()
 
     if not approved:
-        flash("No approved participants to generate teams.")
+        flash("팀을 생성할 승인된 참가자가 없습니다.")
         return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
     # 포지션/점수 정보 준비
@@ -1359,7 +1474,7 @@ def admin_auto_generate_teams(tournament_id):
         })
 
     if not players:
-        flash("No players with valid roles to generate teams.")
+        flash("유효한 포지션을 가진 선수가 없어 팀을 생성할 수 없습니다.")
         return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
     total_players = len(players)
@@ -1383,7 +1498,7 @@ def admin_auto_generate_teams(tournament_id):
 
     team_count = min(max_by_count, max_by_roles)
     if team_count <= 0:
-        flash("Not enough players to form at least one full team of 5 with all roles.")
+        flash("최소한 한 팀(5인, 전 포지션)을 구성하기에 충분한 선수가 없습니다.")
         return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
     # 팀 데이터 구조 초기화
@@ -1506,7 +1621,7 @@ def admin_auto_generate_teams(tournament_id):
             db.session.add(tm)
 
     db.session.commit()
-    flash("Teams generated with role balancing and score heuristic (max 5 players per team).")
+    flash("팀이 생성되었습니다.")
     return redirect(url_for("admin_teams", tournament_id=tournament_id))
 
 
@@ -1524,7 +1639,7 @@ def admin_permissions():
             roles.add("ADMIN")
             target.role = ",".join(sorted(list(roles)))
             db.session.commit()
-            flash(f"User {target.username} now has roles: {target.role}")
+            flash(f"사용자 {target.username}의 권한이 다음과 같이 변경되었습니다: {target.role}")
             
     return render_template("admin/permissions.html", users=users)
 
@@ -1550,21 +1665,21 @@ def admin_handle_user_approval(user_id, action):
     if action == "approve":
         user.approval_status = "APPROVED"
         db.session.commit()
-        flash(f"User {user.username} approved.")
+        flash(f"사용자 {user.username}이(가) 회원 가입 승인되었습니다.")
     # 🚨 수정: 거부 시 상태만 REJECTED로 변경 (삭제하지 않음)
     elif action == "reject":
         user.approval_status = "REJECTED"
         db.session.commit()
-        flash(f"User {user.username}'s account request has been rejected. The account will be deleted upon their next login attempt.")
+        flash(f"사용자 {user.username}의 회원 가입 요청이 거부되었습니다. 다음 로그인 시도 시 계정이 삭제됩니다.")
     # 🚨 추가: 관리자가 수동으로 영구 삭제
     elif action == "delete":
         username = user.username
         # 🚨 데이터베이스에서 사용자 영구 삭제
         db.session.delete(user)
         db.session.commit()
-        flash(f"User {username} has been permanently deleted.")
+        flash(f"사용자 {username}이(가) 영구적으로 삭제되었습니다.")
     else:
-        flash("Invalid action.")
+        flash("유효하지 않은 액션입니다.")
 
     return redirect(url_for("admin_user_approvals"))
 
@@ -1585,14 +1700,14 @@ def admin_tournament(tournament_id):
             if tournament.status == "OPEN":
                 tournament.type = t_type
             elif tournament.type != t_type:
-                flash("토너먼트 유형(Type)은 상태가 OPEN일 때만 변경할 수 있습니다.")
+                flash("대회 유형은 상태가 OPEN일 때만 변경할 수 있습니다.")
 
         status = request.form.get("status", "").strip()
         if status in ("OPEN", "IN_PROGRESS", "FINISHED"):
             tournament.status = status
 
         db.session.commit()
-        flash("Tournament settings updated.")
+        flash("대회 설정이 업데이트되었습니다.")
         return redirect(url_for("admin_tournament", tournament_id=tournament_id))
 
     # 현재 생성된 경기들
@@ -1632,7 +1747,7 @@ def admin_generate_schedule(tournament_id):
 
     teams = Team.query.filter_by(tournament_id=tournament.id).all()
     if len(teams) < 2:
-        flash("Need at least 2 teams to generate schedule.")
+        flash("일정을 생성하려면 최소 2개 팀이 필요합니다.")
         return redirect(url_for("admin_tournament", tournament_id=tournament_id))
 
     if tournament.type == "KNOCKOUT":
@@ -1647,7 +1762,7 @@ def admin_generate_schedule(tournament_id):
 
     tournament.status = "IN_PROGRESS"
     db.session.commit()
-    flash("Schedule generated.")
+    flash("일정이 생성되었습니다.")
     return redirect(url_for("admin_tournament", tournament_id=tournament_id))
 
 
@@ -1667,7 +1782,7 @@ def admin_match_report(match_id):
             s1 = int(request.form.get("team1_score", "0"))
             s2 = int(request.form.get("team2_score", "0"))
         except ValueError:
-            flash("Scores must be integers.")
+            flash("점수는 정수여야 합니다.")
             return redirect(url_for("admin_match_report", match_id=match_id))
 
         # 경기 형식 가져오기: total_games, wins_needed, format_name
@@ -1676,18 +1791,18 @@ def admin_match_report(match_id):
         # BoX 형식에 맞는지 검증
         if s1 < wins_needed and s2 < wins_needed:
             # 승리 조건을 충족하지 못한 경우 (예: Bo3에서 1:1, Bo5에서 2:2)
-            flash(f"Invalid score for {format_name}: At least one team must reach {wins_needed} wins.")
+            flash(f"{format_name}에 대한 유효하지 않은 점수입니다: 최소한 한 팀은 {wins_needed}승을 달성해야 합니다.")
             return redirect(url_for("admin_match_report", match_id=match_id))
         
         # BoX 형식에 맞는지 검증
         if s1 + s2 > bestof:
             # 승리 조건을 충족하지 못한 경우 (예: Bo3에서 1:1, Bo5에서 2:2)
-            flash(f"Invalid score for {format_name}: Total match count cannot exceed {bestof}.")
+            flash(f"{format_name}에 대한 유효하지 않은 점수입니다: 총 매치 수는 {bestof}을 초과할 수 없습니다.")
             return redirect(url_for("admin_match_report", match_id=match_id))
 
         if s1 >= wins_needed and s2 >= wins_needed:
              # 둘 다 승리 조건을 충족할 수는 없음
-             flash(f"Invalid score for {format_name}: Both teams cannot meet or exceed {wins_needed} wins.")
+             flash(f"{format_name}에 대한 유효하지 않은 점수입니다: 양 팀 모두 {wins_needed}승 이상을 달성할 수 없습니다.")
              return redirect(url_for("admin_match_report", match_id=match_id))
 
 
@@ -1708,7 +1823,7 @@ def admin_match_report(match_id):
         # 토너먼트 진행 (다음 라운드 매치 생성 등)
         progress_tournament_if_needed(tournament)
 
-        flash("Match result updated successfully by Admin.")
+        flash("매치 결과가 수정되었습니다.")
         # 업데이트 후 관리자 토너먼트 상세 페이지로 리다이렉트
         return redirect(url_for("admin_tournament", tournament_id=tournament.id)) # 🚨 수정: 토너먼트 ID 전달
 

@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>User Account Approval</h2>
+<h2>✅ 회원 가입 관리</h2>
 <hr>
 
-<h3>Pending Users</h3>
+<h3>⏳ 승인 대기 중인 사용자</h3>
 {% if pending_users | length > 0 %}
 <table border="1" cellpadding="5">
     <tr>
-        <th>User No.</th>
-        <th>User ID</th>
-        <th>Requested Role</th>
-        <th>Action</th>
+        <th>사용자 번호</th>
+        <th>사용자 ID</th>
+        <th>요청된 역할</th>
+        <th>승인/거절</th>
     </tr>
     {% for u in pending_users %}
     <tr>
@@ -19,29 +19,29 @@
         <td>{{ u.role }}</td>
         <td>
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='approve') }}" style="display:inline;">
-                <button type="submit">Approve</button>
+                <button type="submit">승인</button>
             </form>
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='reject') }}" style="display:inline;">
-                <button type="submit" class="btn-reject">Reject</button> 
+                <button type="submit" class="btn-reject">거절</button> 
             </form>
         </td>
     </tr>
     {% endfor %}
 </table>
 {% else %}
-<p>No users are currently pending approval.</p>
+<p>현재 승인 대기 중인 사용자가 없습니다.</p>
 {% endif %}
 
 <hr>
 
-<h3>Rejected Users</h3>
+<h3>❌ 거절된 사용자</h3>
 {% if rejected_users | length > 0 %}
 <table border="1" cellpadding="5">
     <tr>
-        <th>User No.</th>
-        <th>User ID</th>
-        <th>Requested Role</th>
-        <th>Action</th>
+        <th>사용자 번호</th>
+        <th>사용자 ID</th>
+        <th>요청된 권한</th>
+        <th>재승인/영구 삭제</th>
     </tr>
     {% for u in rejected_users %}
     <tr>
@@ -50,17 +50,17 @@
         <td>{{ u.role }}</td>
         <td>
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='approve') }}" style="display:inline;">
-                <button type="submit">Approve</button>
+                <button type="submit">재승인</button>
             </form>
             <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='delete') }}" style="display:inline;">
-                <button type="submit" class="btn-delete">Delete</button>
+                <button type="submit" class="btn-delete">영구 삭제</button>
             </form>
         </td>
     </tr>
     {% endfor %}
 </table>
 {% else %}
-<p>No users are currently rejected.</p>
+<p>현재 거절된 사용자가 없습니다.</p>
 {% endif %}
 
 {% endblock %}

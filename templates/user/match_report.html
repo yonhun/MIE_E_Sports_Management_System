@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Report Result</h2>
+<h2>📝 결과 입력</h2>
 
-<p>{{ match.stage }} Round {{ match.round_no }} - {{ match.team1.name }} vs {{ match.team2.name }}</p>
+<p>{{ match.stage }} 라운드 {{ match.round_no }} - {{ match.team1.name }} vs {{ match.team2.name }}</p>
 
 <form action="{{ url_for('user_match_report', match_id=match.id) }}" method="post">
-    <label>{{ match.team1.name }} score:
+    <label>{{ match.team1.name }} 점수:
         <input type="number" name="team1_score" value="{{ match.team1_score or 0 }}">
     </label>
     <br>
-    <label>{{ match.team2.name }} score:
+    <label>{{ match.team2.name }} 점수:
         <input type="number" name="team2_score" value="{{ match.team2_score or 0 }}">
     </label>
     <br>
-    <button type="submit">Submit</button>
+    <button type="submit">제출</button>
 </form>
 {% endblock %}

@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Permissions Management</h2>
+<h2>🔑 권한 관리</h2>
 <hr>
 
 {# -------------------- 1. 일반 사용자 목록 (ADMIN 권한 부여 폼) -------------------- #}
-<h3>Grant Admin Access</h3>
+<h3>➕ 관리자 권한 부여</h3>
 
 <form action="{{ url_for('admin_permissions') }}" method="post">
-    <label>Select user to make ADMIN:
+    <label>관리자 권한을 부여할 사용자 선택:
         <select name="user_id">
             {% for u in users %}
                 {% set user_roles = u.role.split(',') | map('trim') | list %}
@@ -17,19 +17,19 @@
             {% endfor %}
         </select>
     </label>
-    <button type="submit">Grant Admin Role</button>
+    <button type="submit">관리자 역할 부여</button>
 </form>
 
 <hr>
 
 {# -------------------- 2. 현재 관리자 목록 테이블 출력 -------------------- #}
-<h3>Current Admins</h3> 
+<h3>👑 현재 관리자 목록</h3> 
 <table class="user-list-table" border="1" cellpadding="5">
     <tr>
-        <th>User No.</th> {# <-- ID 컬럼명 변경 #}
-        <th>User ID</th> {# <-- Name 컬럼과 순서 변경 #}
-        <th>Name</th>     {# <-- Username 컬럼과 순서 변경 #}
-        <th>Roles</th>
+        <th>사용자 번호</th> {# <-- ID 컬럼명 변경 #}
+        <th>사용자 ID</th> {# <-- Name 컬럼과 순서 변경 #}
+        <th>이름</th>     {# <-- Username 컬럼과 순서 변경 #}
+        <th>역할</th>
     </tr>
     {% for u in users %}
         {% set user_roles = u.role.split(',') | map('trim') | list %}
@@ -47,13 +47,13 @@
 <hr>
 
 {# -------------------- 3. 일반 사용자 목록 테이블 출력 -------------------- #}
-<h3>General Users (Non-Admins)</h3>
+<h3>👤 일반 사용자 목록 (비관리자)</h3>
 <table class="user-list-table" border="1" cellpadding="5">
     <tr>
-        <th>User No.</th> {# <-- ID 컬럼명 변경 #}
-        <th>User ID</th> {# <-- Name 컬럼과 순서 변경 #}
-        <th>Name</th>     {# <-- Username 컬럼과 순서 변경 #}
-        <th>Roles</th>
+        <th>사용자 번호</th> {# <-- ID 컬럼명 변경 #}
+        <th>사용자 ID</th> {# <-- Name 컬럼과 순서 변경 #}
+        <th>이름</th>     {# <-- Username 컬럼과 순서 변경 #}
+        <th>역할</th>
     </tr>
     {% for u in users %}
         {% set user_roles = u.role.split(',') | map('trim') | list %}

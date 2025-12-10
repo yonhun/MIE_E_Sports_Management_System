@@ -1,5 +1,6 @@
 import csv
 from werkzeug.security import generate_password_hash
+from datetime import datetime
 
 from app import create_app
 from models import db, User, Participant, Tournament
@@ -77,6 +78,9 @@ def seed_users():
                         user.tier = solo_tier
                     elif flex_tier:
                         user.tier = flex_tier
+
+                    if user.solo_tier or user.flex_tier:
+                        user.last_rank_update_at = datetime.now()
 
                 # actual_score 값 있으면 저장
                 if actual_score_str:

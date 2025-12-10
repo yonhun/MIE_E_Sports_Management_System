@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Register - Tournament System</title>
+    <title>회원가입 - 토너먼트 시스템</title>
     {# 외부 CSS 파일 링크만 남깁니다. #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 <div class="auth-container">
-    <h2 class="auth-header">Register</h2>
+    <h2 class="auth-header">회원가입</h2>
 
     {# Flash Message 처리 영역에 class="flash-messages"를 적용합니다. #}
     <div class="flash-messages">
@@ -25,31 +25,31 @@
 
     <form action="{{ url_for('register') }}" method="post">
         <div>
-            <label>Username:
+            <label>아이디:
                 <input type="text" name="username">
             </label>
         </div>
         <div>
-            <label>Password:
+            <label>비밀번호:
                 <input type="password" name="password">
             </label>
         </div>
         
         <div>
-            <label>Initial Role:
+            <label>권한:
                 <select name="initial_role">
-                    <option value="USER" selected>User (Participant)</option>
-                    <option value="ADMIN">Admin (Site Manager)</option>
+                    <option value="USER" selected>사용자</option>
+                    <option value="ADMIN">관리자</option>
                 </select>
             </label>
         </div>
         <div>
-            <button type="submit">Register</button>
+            <button type="submit">회원가입</button>
         </div>
     </form>
 
     <hr>
-    <a href="{{ url_for('login_page') }}">Back to Login</a>
+    <a href="{{ url_for('login_page') }}">로그인 화면으로 돌아가기</a>
 </div>
 </body>
 </html>

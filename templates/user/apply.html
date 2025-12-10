@@ -1,15 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-{# 🚨 수정: 토너먼트 이름 표시 #}
-<h2>Apply for Tournament: {{ tournament.name }}</h2>
+<h2>📄 대회 신청 ({{ tournament.name }})</h2>
+
+{# 🚨 추가: 대회 서브 페이지 이동을 위한 네비게이션 바 #}
+{% set tid = tournament.id %}
+{% set current_endpoint = request.endpoint %}
+<div class="tournament-nav">
+    <a href="{{ url_for('user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
+        대회 신청 정보
+    </a>
+    <a href="{{ url_for('user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
+        팀 정보
+    </a>
+    <a href="{{ url_for('user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
+        매치 정보
+    </a>
+    <a href="{{ url_for('tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
+        전체 현황
+    </a>
+</div>
+<hr>
 
 {# 🚨 수정: tournaments 목록 대신 현재 tournament 객체를 사용 #}
 <form action="{{ url_for('user_apply', tournament_id=tournament.id) }}" method="post">
-    {# 토너먼트 선택 드롭다운은 제거 #}
+    {# 대회 선택 드롭다운은 제거 #}
 
     {% if tournament and tournament.status in ("IN_PROGRESS", "RUNNING", "FINISHED") %}
         <div style="margin-top: 1rem; color: red; font-weight: bold;">
-            신청이 마감되었습니다. 토너먼트 상태: {{ tournament.status }}
+            신청이 마감되었습니다. 대회 상태: {{ tournament.status }}
         </div>
     {% elif is_application_open %}
         {% if current_participant %}
@@ -19,38 +37,38 @@
         </div>
         {% else %}
         <div style="margin-top: 1rem;">
-            <button type="submit">Apply</button>
+            <button type="submit">참가 신청</button>
         </div>
         {% endif %}
     {% endif %}
 </form>
 
-<h3>Profile Info</h3>
+<h3>👤 프로필 정보</h3>
 <table border="1" cellpadding="5" style="max-width: 500px;">
     <tr>
-        <th>Student ID</th>
-        <td>{{ user.student_id or "Not set" }}</td>
+        <th>학번</th>
+        <td>{{ user.student_id or "-" }}</td>
     </tr>
     <tr>
-        <th>Name</th>
-        <td>{{ user.real_name or "Not set" }}</td>
+        <th>이름</th>
+        <td>{{ user.real_name or "-" }}</td>
     </tr>
     <tr>
         <th>Riot ID</th>
-        <td>{{ user.summoner_riot_id or "Not set" }}</td>
+        <td>{{ user.summoner_riot_id or "-" }}</td>
     </tr>
     <tr>
-        <th>Solo Tier</th>
-        <td>{{ user.solo_tier or "No data" }}</td>
+        <th>솔로 랭크</th>
+        <td>{{ user.solo_tier or "-" }}</td>
     </tr>
     <tr>
-        <th>Flex Tier</th>
-        <td>{{ user.flex_tier or "No data" }}</td>
+        <th>자유 랭크 티어</th>
+        <td>{{ user.flex_tier or "-" }}</td>
     </tr>
     <tr>
-        <th>Estimated Score</th>
-        <td><strong>{{ calculate_estimated_score(user) or "No score (unranked)" }}</strong></td>
+        <th>예상 점수</th>
+        <td><strong>{{ calculate_estimated_score(user) or "점수 없음 (언랭)" }}</strong></td>
     </tr>
 </table>
-<p>(Student ID, Name, Riot ID는 필수, 랭크/점수는 참고용입니다.)</p>
+<p>(학번, 이름, Riot ID는 필수, 랭크/점수는 참고용입니다.)</p>
 {% endblock %}

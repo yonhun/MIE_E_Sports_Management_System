@@ -1,13 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
-{# 🚨 추가: 토너먼트 이름 표시 #}
-<h2>Teams Management ({{ tournament.name }})</h2>
+{# 🚨 추가: 대회 이름 표시 #}
+<h2>👥 팀 관리 ({{ tournament.name }})</h2>
 
-{# 🚨 수정: tournament_id 전달 #}
+{% set tid = tournament.id %}
+{% set current_endpoint = request.endpoint %}
+<div class="tournament-nav">
+    <a href="{{ url_for('admin_tournament', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_tournament' %}current-page{% endif %}">
+        설정 / 일정
+    </a>
+    <a href="{{ url_for('admin_participants', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_participants' %}current-page{% endif %}">
+        참가자
+    </a>
+    <a href="{{ url_for('admin_teams', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_teams' %}current-page{% endif %}">
+        팀 관리
+    </a>
+</div>
+<hr>
+
 <form action="{{ url_for('admin_auto_generate_teams', tournament_id=tournament.id) }}" method="post" style="margin-bottom: 1rem;">
-    <p>Auto-generate를 실행하면 현재 팀 구성과 팀명이 모두 초기화됩니다.</p>
-    <button type="submit">Auto-generate Teams</button>
+    <p>팀 자동 생성을 실행하면 현재 팀 구성과 팀명, 그리고 **모든 매치 일정이 초기화됩니다.**</p>
+    <button type="submit">팀 자동 생성</button>
 </form>
+
+<hr>
+
+<h3>팀 목록</h3>
 
 {% if teams|length > 0 %}
     {# 폼을 각 팀 섹션 안으로 이동 #}
@@ -22,7 +40,7 @@
         {% endfor %}
 
         <div style="margin-bottom: 1rem; border: 1px solid #ccc; padding: 0.5rem;">
-            <label>Team Name:
+            <label>팀 이름:
                 <input type="text" name="team_name_{{ team.id }}" value="{{ team.name }}">
             </label>
 
@@ -30,9 +48,9 @@
             
             <br>
             
-            <label>Team Captain:
+            <label>팀 주장:
                 <select name="captain_user_{{ team.id }}">
-                    <option value="">-- select --</option>
+                    <option value="">-- 선택 --</option>
                     {% for tm in team.members %}
                         {% set u = tm.participant.user %}
                         <option value="{{ u.id }}"
@@ -43,18 +61,18 @@
                 </select>
             </label>
             <p>
-                Team Base Score Sum: {{ team.base_total }} /
-                Team Weighted Score Sum: {{ "%.1f"|format(team.weighted_total) }}
+                팀 실제 점수 합계: {{ team.base_total }} /
+                팀 가중치 점수 합계: {{ "%.1f"|format(team.weighted_total) }}
             </p>
 
             <table border="1" cellpadding="4" class="team-member-list">
                 <tr>
-                    <th>Name</th>
+                    <th>이름</th>
                     <th>Riot ID</th>
-                    <th>Assigned Role</th>
-                    <th>Primary / Sec1 / Sec2</th>
-                    <th>Base Score</th>
-                    <th>Weighted Score</th>
+                    <th>배정 포지션</th>
+                    <th>주 포지션 / 보조 1 / 보조 2</th>
+                    <th>실제 점수</th>
+                    <th>가중치 점수</th>
                 </tr>
                 {% for tm in team.members %}
                     {% set u = tm.participant.user %}
@@ -76,14 +94,14 @@
             </table>
             
             {# 개별 팀 업데이트 버튼 추가 #}
-            <button type="submit" style="margin-top: 1rem;">Update Team Info</button>
+            <button type="submit" style="margin-top: 1rem;">팀 정보 수정</button>
         </div>
     </form>
     {% endfor %}
 
     {# 기존의 일괄 업데이트 버튼 제거 #}
 {% else %}
-    <p style="margin-top: 1rem;">No teams have been generated yet. Use the "Auto-generate Teams" button above.</p>
+    <p style="margin-top: 1rem;">아직 팀이 생성되지 않았습니다. 위의 "팀 자동 생성" 버튼을 사용해주세요.</p>
 {% endif %}
 
 {% endblock %}

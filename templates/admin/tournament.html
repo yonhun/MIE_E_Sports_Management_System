@@ -1,43 +1,60 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Tournament Settings: {{ tournament.name }} (ID: {{ tournament.id }})</h2>
+<h2>⚙️ 대회 설정 ({{ tournament.name }})</h2>
+
+{# 🚨 수정: 불필요한 <strong> 태그 제거 #}
+{% set tid = tournament.id %}
+{% set current_endpoint = request.endpoint %}
+<div class="tournament-nav">
+    <a href="{{ url_for('admin_tournament', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_tournament' %}current-page{% endif %}">
+        설정 / 일정
+    </a>
+    <a href="{{ url_for('admin_participants', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_participants' %}current-page{% endif %}">
+        참가자
+    </a>
+    <a href="{{ url_for('admin_teams', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_teams' %}current-page{% endif %}">
+        팀 관리
+    </a>
+</div>
 <hr>
 
 {# -------------------- 1. 기본 정보 수정 폼 -------------------- #}
+<h3>📝 기본 정보 수정</h3>
 <form action="{{ url_for('admin_tournament', tournament_id=tournament.id) }}" method="post">
     <div>
-        <label>Tournament Name:
+        <label>대회 이름:
             <input type="text" name="name" value="{{ tournament.name }}" disabled>
         </label>
     </div>
     <div>
-        <label>Type:
+        <label>유형:
             <select name="type">
-                <option value="KNOCKOUT" {% if tournament.type == "KNOCKOUT" %}selected{% endif %}>Knockout (Playoff)</option>
-                <option value="LEAGUE" {% if tournament.type == "LEAGUE" %}selected{% endif %}>League (Round Robin)</option>
-                <option value="LEAGUE_FINAL" {% if tournament.type == "LEAGUE_FINAL" %}selected{% endif %}>League + Final</option>
+                <option value="KNOCKOUT" {% if tournament.type == "KNOCKOUT" %}selected{% endif %}>토너먼트</option>
+                <option value="LEAGUE" {% if tournament.type == "LEAGUE" %}selected{% endif %}>리그</option>
+                <option value="LEAGUE_FINAL" {% if tournament.type == "LEAGUE_FINAL" %}selected{% endif %}>리그 + 결승</option>
             </select>
         </label>
     </div>
     <div>
-        <label>Status:
+        <label>상태:
             <select name="status">
-                <option value="OPEN" {% if tournament.status == "OPEN" %}selected{% endif %}>OPEN</option>
-                <option value="IN_PROGRESS" {% if tournament.status == "IN_PROGRESS" %}selected{% endif %}>IN_PROGRESS</option>
-                <option value="FINISHED" {% if tournament.status == "FINISHED" %}selected{% endif %}>FINISHED</option>
+                <option value="OPEN" {% if tournament.status == "OPEN" %}selected{% endif %}>신청 가능</option>
+                <option value="IN_PROGRESS" {% if tournament.status == "IN_PROGRESS" %}selected{% endif %}>진행 중</option>
+                <option value="FINISHED" {% if tournament.status == "FINISHED" %}selected{% endif %}>종료</option>
             </select>
         </label>
     </div>
-    <button type="submit">Update</button>
+    <button type="submit">업데이트</button>
 </form>
 
 <hr>
 
 {# -------------------- 2. 매치 생성 및 초기화 -------------------- #}
+<h3>🗓️ 매치 일정 생성</h3>
 <form action="{{ url_for('admin_generate_schedule', tournament_id=tournament.id) }}" method="post" style="margin-top: 1rem;">
-    <p>현재 승인된 팀을 기준으로 대진/일정을 자동 생성합니다. **기존 Match 데이터는 모두 삭제됩니다.**</p>
+    <p>현재 승인된 팀을 기준으로 대진/일정을 자동 생성합니다. **기존 매치 데이터는 모두 삭제됩니다.**</p>
     {# 🚨 수정: 엔드포인트 이름을 'admin_generate_schedule'로 변경 #}
-    <button type="submit">Generate Schedule</button>
+    <button type="submit">일정 생성</button>
 </form>
 
 <hr>
@@ -45,11 +62,11 @@
 {# --- 3. FINISHED 상태일 때 우승팀 표시 --- #}
 {% if tournament.status == "FINISHED" %}
     <div class="finished-box">
-        <h3>🏆 Tournament Finished!</h3>
+        <h3>🏆 대회 종료!</h3>
         {% if winner_team %}
-            <p style="font-size: 1.2em; font-weight: bold;">Winner: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
+            <p style="font-size: 1.2em; font-weight: bold;">우승 팀: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
         {% else %}
-            <p>The winner could not be determined or recorded.</p>
+            <p>우승팀을 결정하거나 기록할 수 없습니다.</p>
         {% endif %}
     </div>
     <hr>
@@ -59,18 +76,18 @@
 
 {# --- 4. 리그 순위 테이블 표시 (LEAGUE 또는 LEAGUE_FINAL) --- #}
 {% if league_standings %}
-    <h3>League Standings (League Stage)</h3>
+    <h3>📊 리그 순위 (리그 단계)</h3>
     {% if league_standings|length > 0 %}
         <table border="1" cellpadding="4" style="margin-bottom: 20px;">
             <tr>
-                <th>Rank</th>
-                <th>Team</th>
-                <th>Points (P)</th>
-                <th>Wins (W)</th>
-                <th>Losses (L)</th>
-                <th>Games For (GF)</th>
-                <th>Games Against (GA)</th>
-                <th>Game Diff (GD)</th>
+                <th>순위</th>
+                <th>팀</th>
+                <th>승점 (P)</th>
+                <th>승 (W)</th>
+                <th>패 (L)</th>
+                <th>득점 게임 수 (GF)</th>
+                <th>실점 게임 수 (GA)</th>
+                <th>득실차 (GD)</th>
             </tr>
             {% for standing in league_standings %}
             <tr>
@@ -86,14 +103,14 @@
             {% endfor %}
         </table>
     {% else %}
-        <p>No league matches recorded yet or all matches are unfinished.</p>
+        <p>아직 기록된 리그 매치가 없거나 모든 매치가 미완료 상태입니다.</p>
     {% endif %}
     <hr>
 {% endif %}
 {# ------------------------------------------------------------------- #}
 
 
-<h3>Matches</h3>
+<h3>매치 목록</h3>
 
 {# 5. KNOCKOUT 브래킷 시각화 #}
 {% set max_round_no = 0 %}
@@ -106,7 +123,7 @@
 {% if tournament.type == "KNOCKOUT" and matches %}
     {# ------------------ [KNOCKOUT 브래킷 시각화] ------------------ #}
     <div style="margin-top: 1.5rem;">
-        <h4>Knockout Bracket Visualization</h4>
+        <h4>대회 대진표 시각화</h4>
         
         {# 매치 목록을 round_no 기준으로 그룹화합니다. #}
         {% set rounds = matches | groupby('round_no') | list %}
@@ -116,9 +133,9 @@
             <div class="bracket-round">
                 <h4>
                     {% if round_no == total_rounds %}
-                        Final
+                        결승
                     {% else %}
-                        Round {{ round_no }}
+                        라운드 {{ round_no }}
                     {% endif %}
                 </h4>
                 
@@ -163,14 +180,14 @@
 {% if matches %}
 <table border="1" cellpadding="4">
     <tr>
-        <th>Stage</th>
-        <th>Round</th>
-        <th>Match</th>
-        <th>Team1</th>
-        <th>Team2</th>
-        <th>Status</th>
-        <th>Score</th>
-        <th>Action</th>
+        <th>단계</th>
+        <th>라운드</th>
+        <th>매치</th>
+        <th>팀 1</th>
+        <th>팀 2</th>
+        <th>상태</th>
+        <th>점수</th>
+        <th>결과 수정</th>
     </tr>
     {% for m in matches %}
         <tr>
@@ -178,7 +195,7 @@
             <td>
                 {# KNOCKOUT 타입이 아니거나 라운드가 Max round와 같으면 "Final" 표시 #}
                 {% if m.round_no == total_rounds %}
-                    Final
+                    결승
                 {% else %}
                     {{ m.round_no }}
                 {% endif %}
@@ -195,12 +212,12 @@
                 {% endif %}
             </td>
             <td>
-                <a href="{{ url_for('admin_match_report', match_id=m.id) }}">Edit Result</a>
+                <a href="{{ url_for('admin_match_report', match_id=m.id) }}">결과 수정</a>
             </td>
         </tr>
     {% endfor %}
 </table>
 {% else %}
-<p>No match schedule has been generated yet for this tournament.</p>
+<p>아직 이 대회에 대한 매치 일정이 생성되지 않았습니다.</p>
 {% endif %}
 {% endblock %}

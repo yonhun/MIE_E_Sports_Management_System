@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Dashboard</h2>
+<h2>🏠 대시보드</h2>
 <hr>
 
 {# 📊 System Overview 섹션을 활성화하고 표로 변경 #}
-<h3>📊 System Overview</h3>
+<h3>📊 시스템 개요</h3>
 <table border="1" cellpadding="5" style="max-width: 500px; margin-bottom: 1.5rem;">
     <tr>
-        <th>Metric</th>
-        <th>Value</th>
-        <th>Action Link</th>
+        <th>지표</th>
+        <th>값</th>
+        <th>관리</th>
     </tr>
     <tr>
-        <td>Total Registered Users</td>
+        <td>총 등록된 사용자</td>
         <td><strong>{{ total_users_count or "-" }}</strong></td>
         <td>-</td>
     </tr>
     <tr>
-        <td>Pending User Approvals</td>
+        <td>승인 대기 중인 사용자</td>
         <td>
             {# FIX: 클래스 바인딩으로 변경 #}
             {% set pending_class = 'status-critical' if pending_users_count > 0 else 'status-ok' %}
@@ -25,47 +25,47 @@
                 {{ pending_users_count or "0" }}
             </strong>
         </td>
-        <td><a href="{{ url_for('admin_user_approvals') }}">Review Accounts</a></td>
+        <td><a href="{{ url_for('admin_user_approvals') }}">계정 승인</a></td>
     </tr>
 </table>
 
 <hr>
 
-{# 🚨 필터링 로직 추가: OPEN 또는 IN_PROGRESS인 토너먼트만 활성 목록으로 처리 #}
+{# 🚨 필터링 로직 추가: OPEN 또는 IN_PROGRESS인 대회만 활성 목록으로 처리 #}
 {% set active_tournaments = tournaments | selectattr('status', 'in', ['OPEN', 'IN_PROGRESS']) | list %}
 {% set finished_tournaments = tournaments | selectattr('status', '==', 'FINISHED') | list %}
 
-{# 🚨 수정: 활성 토너먼트 목록만 표시 #}
-<h3>🏆 Active / Ongoing Tournaments ({{ active_tournaments|length }})</h3>
+{# 🚨 수정: 활성 대회 목록만 표시 #}
+<h3>🏆 진행 중 / 활성 대회</h3>
 {% if active_tournaments %}
     {% for t in active_tournaments %}
         <div style="border: 1px solid #ccc; padding: 10px; margin-bottom: 1.5rem;">
-            <h4>{{ t.name }} <small>(ID: {{ t.id }})</small></h4>
-            <p>Status: <span style="font-weight: bold;">{{ t.status }}</span></p>
+            <h4>{{ t.name }} </h4>
+            <p>상태: <span style="font-weight: bold;">{{ t.status }}</span></p>
 
             <table border="1" cellpadding="5" style="max-width: 700px; margin-top: 0.5rem;">
                 <tr>
-                    <th>Metric</th>
-                    <th>Value</th>
-                    <th>Action Link</th>
+                    <th>지표</th>
+                    <th>값</th>
+                    <th>관리</th>
                 </tr>
                 <tr>
-                    <td>Total Applications</td>
+                    <td>총 신청자 수</td>
                     <td>{{ t.total_applications }}</td>
-                    <td><a href="{{ url_for('admin_participants', tournament_id=t.id) }}">Manage Participants</a></td>
+                    <td><a href="{{ url_for('admin_participants', tournament_id=t.id) }}">참가자 관리</a></td>
                 </tr>
                 <tr>
-                    <td>Approved Participants</td>
+                    <td>승인된 참가자 수</td>
                     <td><strong>{{ t.approved }}</strong></td>
-                    <td></td>
+                    <td><a href="{{ url_for('admin_participants', tournament_id=t.id) }}">점수 수정</a></td>
                 </tr>
                 <tr>
-                    <td>Total Teams Formed</td>
+                    <td>결성된 팀 수</td>
                     <td>{{ t.total_teams_count or "-" }}</td>
-                    <td><a href="{{ url_for('admin_teams', tournament_id=t.id) }}">Manage Teams</a></td>
+                    <td><a href="{{ url_for('admin_teams', tournament_id=t.id) }}">팀 관리</a></td>
                 </tr>
                 <tr>
-                    <td>Pending Matches</td>
+                    <td>대기 중인 매치 수</td>
                     <td>
                         {# FIX: 클래스 바인딩으로 변경 #}
                         {% set matches_class = 'status-critical' if t.pending_matches_count > 0 else 'status-ok' %}
@@ -73,17 +73,17 @@
                             {{ t.pending_matches_count or "-" }}
                         </strong>
                     </td>
-                    <td><a href="{{ url_for('admin_tournament', tournament_id=t.id) }}">View Schedule</a></td>
+                    <td><a href="{{ url_for('admin_tournament', tournament_id=t.id) }}">일정 보기</a></td>
                 </tr>
             </table>
         </div>
     {% endfor %}
 {% else %}
     <div class="access-box" style="margin-top: 10px;">
-        <p style="margin-bottom: 1rem;">현재 진행 중이거나 신청 가능한 토너먼트가 없습니다.</p>
+        <p style="margin-bottom: 1rem;">현재 진행 중이거나 신청 가능한 대회가 없습니다.</p>
         <p>
             <a href="{{ url_for('admin_tournaments') }}" class="btn-primary-access">
-                토너먼트 관리 페이지로 이동
+                대회 관리 페이지로 이동
             </a>
         </p>
     </div>

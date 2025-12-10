@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Tournament System</title>
+    <title>로그인 - 토너먼트 시스템</title>
     {# 외부 CSS 파일 링크만 남깁니다. #}
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 <div class="auth-container">
-    <h2 class="auth-header">Login</h2>
+    <h2 class="auth-header">로그인</h2>
 
     {# Flash Message 처리 영역에 class="flash-messages"를 적용합니다. #}
     <div class="flash-messages">
@@ -24,12 +24,12 @@
     </div>
 
     {% if roles and username %}
-        <p>Welcome back, <strong>{{ username }}</strong>.<br>Please select a role to proceed</p>
+        <p>환영합니다, <strong>{{ username }}</strong>님.<br>접속할 역할을 선택해주세요.</p>
         <form action="{{ url_for('login') }}" method="post">
             <input type="hidden" name="username" value="{{ username }}"> 
             
             <div>
-                <label>Login As
+                <label>역할 선택
                     <select name="selected_role" required>
                         {% for role in roles %}
                             <option value="{{ role }}">{{ role.capitalize() }}</option>
@@ -38,27 +38,27 @@
                 </label>
             </div>
             <div>
-                <button type="submit">Login</button>
+                <button type="submit">로그인</button>
             </div>
         </form>
     {% else %}
         <form action="{{ url_for('login') }}" method="post">
             <div>
-                <label>Username:
+                <label>아이디:
                     <input type="text" name="username">
                 </label>
             </div>
             <div>
-                <label>Password:
+                <label>비밀번호:
                     <input type="password" name="password">
                 </label>
             </div>
             <div>
-                <button type="submit">Login</button>
+                <button type="submit">로그인</button>
             </div>
         </form>
         <hr>
-        <p>Not a member yet? <a href="{{ url_for('register') }}">Go to Register</a></p>
+        <p>아직 회원이 아니신가요? <a href="{{ url_for('register') }}">회원가입으로 이동</a></p>
     {% endif %}
 
 </div>

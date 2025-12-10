@@ -1,49 +1,62 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Dashboard</h2>
+<h2>🏠 대시보드</h2>
 <hr>
 
 {# User Profile Summary (Table format) #}
-<h3>👤 My Profile Snapshot</h3>
+<h3>👤 나의 프로필 요약</h3>
 {# 🚨 수정: border="1"과 cellpadding="5" 속성을 제거했습니다. #}
 <table style="max-width: 500px;">
     <tr>
         <th>Riot ID</th>
-        <td><strong>{{ user.summoner_riot_id or "Not set" }}</strong></td>
+        <td><strong>{{ user.summoner_riot_id or "미설정" }}</strong></td>
     </tr>
     <tr>
-        <th>Primary Role</th>
+        <th>주 포지션</th>
         <td><strong>{{ user.primary_role or "-" }}</strong></td>
     </tr>
     <tr>
-        <th>Estimated Score</th>
+        <th>예상 점수</th>
         <td><strong>{{ calculate_estimated_score(user) or "N/A" }}</strong></td>
     </tr>
     <tr>
-        <th>Profile Link</th>
-        <td><a href="{{ url_for('user_profile') }}">Update Profile & Roles</a></td>
+        <th>프로필 링크</th>
+        <td><a href="{{ url_for('user_profile') }}">프로필 및 포지션 수정</a></td>
     </tr>
 </table>
 
 <hr>
 
 {# 🚨 수정: Tournament Access 섹션의 헤딩을 박스 밖으로 이동하여 Profile 섹션과 구조를 통일 #}
-<h3>🏆 Tournament Access</h3> 
+<h3>🏆 대회 참가</h3> 
 
 {% set open_tournaments = tournaments | selectattr('status', '==', 'OPEN') | list %}
 
 <div class="access-box" style="margin-top: 10px;">
-    {% if open_tournaments|length > 0 %}
+    {# 🚨 수정: 현재 승인된 상태로 참여 중인 대회가 있는지 먼저 확인 #}
+    {% if has_active_tournaments %}
+        <p style="margin-bottom: 1rem; font-weight: bold; color: #0056b3;">
+            ✅ 현재 진행/신청 가능 대회에 참여 중입니다.
+        </p>
+        <p>
+            <a href="{{ url_for('user_tournaments') }}" class="btn-primary-access">
+                참여 대회 상태 및 매치 확인
+            </a>
+        </p>
+    
+    {# 현재 참여 중인 대회가 없으면, 신청 가능한 대회가 있는지 확인 #}
+    {% elif open_tournaments|length > 0 %}
+        <p style="margin-bottom: 1rem;">현재 신청 가능한 대회가 있습니다. 놓치지 마세요!</p>
         <p>
             <a href="{{ url_for('user_tournaments') }}" class="btn-primary-access">
-                토너먼트 목록 및 참가 신청
+                대회 목록 및 참가 신청
             </a>
         </p>
     {% else %}
-        <p style="margin-bottom: 1rem;">현재 신청 가능한 토너먼트가 없습니다.<br>목록에서 진행 중인 다른 토너먼트의 상태를 확인할 수 있습니다.</p>
+        <p style="margin-bottom: 1rem;">현재 신청 가능한 대회가 없습니다.<br>목록에서 진행 중인 다른 대회의 상태를 확인할 수 있습니다.</p>
         <p>
             <a href="{{ url_for('user_tournaments') }}" class="btn-primary-access">
-                전체 토너먼트 목록 보기
+                전체 대회 목록 보기
             </a>
         </p>
     {% endif %}

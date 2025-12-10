@@ -2,33 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ title or "Tournament System" }}</title>
+    <title>{{ "MIE E-Sports" }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
 <div class="page-container">
     <nav>
         {% if session.get('role') == "USER" %}
-            <h4>Menu</h4>
+            <h4>메뉴</h4>
             <ul>
-                <li><a href="{{ url_for('user_dashboard') }}">Dashboard</a></li>
-                <li><a href="{{ url_for('user_profile') }}">Profile</a></li>
-                <li><a href="{{ url_for('user_tournaments') }}">Tournaments</a></li> 
+                <li><a href="{{ url_for('user_dashboard') }}">🏠 대시보드</a></li>
+                <li><a href="{{ url_for('user_profile') }}">⚙️ 프로필</a></li>
+                <li><a href="{{ url_for('user_tournaments') }}">🏆 대회</a></li> 
             </ul>
         {% elif session.get('role') == "ADMIN" %}
-            <h4>Menu</h4>
+            <h4>메뉴</h4>
             <ul>
-                <li><a href="{{ url_for('admin_dashboard') }}">Dashboard</a></li>
-                <li><a href="{{ url_for('admin_tournaments') }}">Tournaments</a></li>
-                <li><a href="{{ url_for('admin_permissions') }}">Permissions</a></li>
-                <li><a href="{{ url_for('admin_user_approvals') }}">User Approvals</a></li>
+                <li><a href="{{ url_for('admin_dashboard') }}">🏠 대시보드</a></li>
+                <li><a href="{{ url_for('admin_tournaments') }}">🏆 대회 관리</a></li>
+                <li><a href="{{ url_for('admin_permissions') }}">🔑 권한 관리</a></li>
+                <li><a href="{{ url_for('admin_user_approvals') }}">✅ 회원 가입 관리</a></li>
             </ul>
         {% endif %}
 
         <hr>
         {% if session.get('user_id') %}
         <ul>
-            <li><a href="{{ url_for('logout') }}" class="logout-link">LOGOUT</a></li>
+            <li><a href="{{ url_for('logout') }}" class="logout-link">로그아웃</a></li>
         </ul>
         {% endif %}
     </nav>

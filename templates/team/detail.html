@@ -1,27 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Team Detail</h2>
+<h2>👥 팀 상세 정보</h2>
 
 <p>
-    Team name: {{ team.name }}
+    팀 이름: {{ team.name }}
     {% if team.captain %}
-        (Captain: {{ team.captain.real_name or team.captain.username }})
+        (주장: {{ team.captain.real_name or team.captain.username }})
     {% endif %}
 </p>
 <p>
-    Team Base Score Sum: {{ team.base_total }} /
-    Team Weighted Score Sum: {{ "%.1f"|format(team.weighted_total) }}
+    팀 실제 점수 합계: {{ team.base_total }} /
+    팀 가중치 점수 합계: {{ "%.1f"|format(team.weighted_total) }}
 </p>
 
-<h3>Members</h3>
+<h3>팀원 목록</h3>
 <table border="1" cellpadding="4" class="team-member-list">
     <tr>
-        <th>Name</th>
+        <th>이름</th>
         <th>Riot ID</th>
-        <th>Assigned Role</th>
-        <th>Primary / Sec1 / Sec2</th>
-        <th>Base Score</th>
-        <th>Weighted Score</th>
+        <th>배정 포지션</th>
+        <th>주 포지션 / 보조 1 / 보조 2</th>
+        <th>실제 점수</th>
+        <th>가중치 점수</th>
     </tr>
     {% for tm in team.members %}
         {% set u = tm.participant.user %}

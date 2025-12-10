@@ -589,3 +589,31 @@ table.tournament-list-finished-user th:nth-child(5),
 table.tournament-list-finished-user td:nth-child(5) {
     width: 22%;
 }
+
+/* 14. Tournament Sub-Navigation Styling */
+.tournament-nav {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #007bff;
+}
+
+.tournament-nav a {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: 500;
+    padding: 0.2rem 0; /* 링크 클릭 영역 확보 */
+    transition: font-weight 0.2s;
+}
+
+.tournament-nav a:hover {
+    text-decoration: underline;
+}
+
+/* 🚨 수정: 현재 페이지 링크의 폰트 두께를 강하게 설정 (bold) */
+.tournament-nav a.current-page,
+.tournament-nav a.current-page * { /* *는 링크 내부의 모든 요소에 적용 */
+    font-weight: 900 !important;
+    color: #007bff !important; 
+}

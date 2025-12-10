@@ -33,7 +33,8 @@ class User(db.Model):
     secondary_role1 = db.Column(db.String(16)) 
     secondary_role2 = db.Column(db.String(16)) 
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now())
+    last_rank_update_at = db.Column(db.DateTime)
 
     participants = db.relationship("Participant", back_populates="user")
 
@@ -47,7 +48,7 @@ class Tournament(db.Model):
     type = db.Column(db.String(16), default="KNOCKOUT") # 대회 방식: "KNOCKOUT", "LEAGUE", "LEAGUE_FINAL"
     status = db.Column(db.String(32), default="OPEN")  # OPEN, IN_PROGRESS, FINISHED
     current_stage = db.Column(db.String(16), default="LEAGUE") # 현재 단계: LEAGUE, PLAYOFF, FINAL 등
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now())
 
     participants = db.relationship("Participant", back_populates="tournament")
     teams = db.relationship("Team", back_populates="tournament")
@@ -60,7 +61,7 @@ class Participant(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
     tournament_id = db.Column(db.Integer, db.ForeignKey("tournaments.id"), nullable=False)
     status = db.Column(db.String(16), default="PENDING")  # PENDING, APPROVED, REJECTED
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now())
 
     user = db.relationship("User", back_populates="participants")
     tournament = db.relationship("Tournament", back_populates="participants")

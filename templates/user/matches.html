@@ -1,34 +1,52 @@
 {% extends "base.html" %}
 {% block content %}
-{# 🚨 수정: 토너먼트 이름 표시 #}
-<h2>Matches ({{ tournament.name }})</h2>
+<h2>🗓️ 매치 정보 ({{ tournament.name }})</h2>
+
+{# 🚨 추가: 대회 서브 페이지 이동을 위한 네비게이션 바 #}
+{% set tid = tournament.id %}
+{% set current_endpoint = request.endpoint %}
+<div class="tournament-nav">
+    <a href="{{ url_for('user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
+        대회 신청 정보
+    </a>
+    <a href="{{ url_for('user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
+        팀 정보
+    </a>
+    <a href="{{ url_for('user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
+        매치 정보
+    </a>
+    <a href="{{ url_for('tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
+        전체 현황
+    </a>
+</div>
+<hr>
 
 {% if not tournament %}
-    <p>No tournament is currently active.</p>
+    <p>현재 진행 중인 대회가 없습니다.</p>
 {% elif not my_team_id %}
     {% if not my_participant %}
-    <p>You are not currently participating in the tournament. Please use the "Apply" menu to join.</p>
-    {# 🚨 수정: 토너먼트 목록으로 리다이렉트 #}
-    <p><a href="{{ url_for('user_tournaments') }}">Go to Tournaments List</a></p>
+    <p>현재 이 대회에 참가하고 있지 않습니다. "신청" 메뉴를 사용하여 참가해주세요.</p>
+    {# 🚨 수정: 대회 목록으로 리다이렉트 #}
+    <p><a href="{{ url_for('user_tournaments') }}">대회 목록으로 이동</a></p>
     {% elif my_participant.status != "APPROVED" %}
-    <p>Your application status is <strong>{{ my_participant.status }}</strong>. You will be assigned to a team after approval.</p>
+    <p>회원님의 신청 상태는 <strong>{{ my_participant.status }}</strong>입니다. 승인 후 팀에 배정됩니다.</p>
     {% else %}
-    <p>You have been approved, but teams have not been generated yet.</p>
+    <p>승인은 완료되었으나, 아직 팀이 생성되지 않았습니다.</p>
     {% endif %}
 {% elif not matches %}
-    <p>No matches have been scheduled for your team yet.</p>
-    <p>Current Tournament Status: <strong>{{ tournament.status }}</strong> (Stage: {{ tournament.current_stage or "-" }})</p>
+    <p>아직 팀의 매치 일정이 생성되지 않았습니다.</p>
+    <p>현재 대회 상태: <strong>{{ tournament.status }}</strong> (단계: {{ tournament.current_stage or "-" }})</p>
 {% else %}
 <table border="1" cellpadding="4">
     <tr>
-        <th>Stage</th>
-        <th>Round</th>
-        <th>Match</th>
-        <th>Team1</th>
-        <th>Team2</th>
-        <th>Status</th>
-        <th>Score</th>
-        <th>Action</th>
+        <th>단계</th>
+        <th>라운드</th>
+        <th>매치</th>
+        <th>팀 1</th>
+        <th>팀 2</th>
+        <th>상태</th>
+        <th>점수</th>
+        <th>결과 보고</th>
     </tr>
     {% for m in matches %}
         <tr>
@@ -47,7 +65,7 @@
             </td>
             <td>
                 {% if m.status == "SCHEDULED" %}
-                    <a href="{{ url_for('user_match_report', match_id=m.id) }}">Report Result</a>
+                    <a href="{{ url_for('user_match_report', match_id=m.id) }}">결과 보고</a>
                 {% else %}
                     -
                 {% endif %}

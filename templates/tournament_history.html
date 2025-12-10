@@ -1,17 +1,35 @@
 {% extends "base.html" %}
 {% block content %}
-<h2>Tournament History: {{ tournament.name }} (ID: {{ tournament.id }})</h2>
-<p><strong>Type:</strong> {{ tournament.type }} | <strong>Status:</strong> {{ tournament.status }}</p>
-<hr>
+<h2>🏆 대회 기록 / 전체 현황 ({{ tournament.name }})</h2>
+
+{# 🚨 추가: User 역할일 때만 서브 페이지 이동을 위한 네비게이션 바를 표시 #}
+{% set tid = tournament.id %}
+{% set current_endpoint = request.endpoint %}
+{% if session.get('role') == 'USER' and tournament.status != 'FINISHED' %}
+<div class="tournament-nav">
+    <a href="{{ url_for('user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
+        대회 신청 정보
+    </a>
+    <a href="{{ url_for('user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
+        팀 정보
+    </a>
+    <a href="{{ url_for('user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
+        매치 정보
+    </a>
+    <a href="{{ url_for('tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
+        전체 현황
+    </a>
+</div>
+{% endif %}
 
 {# --- 1. FINISHED 상태일 때 우승팀 표시 --- #}
 {% if tournament.status == "FINISHED" %}
     <div class="finished-box">
-        <h3>🏆 Tournament Finished!</h3>
+        <h3>🏆 대회 종료!</h3>
         {% if winner_team %}
-            <p style="font-size: 1.2em; font-weight: bold;">Winner: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
+            <p style="font-size: 1.2em; font-weight: bold;">우승 팀: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
         {% else %}
-            <p>The winner could not be determined or recorded.</p>
+            <p>우승팀을 결정하거나 기록할 수 없습니다.</p>
         {% endif %}
     </div>
     <hr>
@@ -20,18 +38,18 @@
 
 {# --- 2. 리그 순위 테이블 표시 (LEAGUE 또는 LEAGUE_FINAL) --- #}
 {% if league_standings %}
-    <h3>League Standings (League Stage)</h3>
+    <h3>📊 리그 순위 (리그 단계)</h3>
     {% if league_standings|length > 0 %}
         <table border="1" cellpadding="4" style="margin-bottom: 20px;">
             <tr>
-                <th>Rank</th>
-                <th>Team</th>
-                <th>Points (P)</th>
-                <th>Wins (W)</th>
-                <th>Losses (L)</th>
-                <th>Games For (GF)</th>
-                <th>Games Against (GA)</th>
-                <th>Game Diff (GD)</th>
+                <th>순위</th>
+                <th>팀</th>
+                <th>승점 (P)</th>
+                <th>승 (W)</th>
+                <th>패 (L)</th>
+                <th>득점 게임 수 (GF)</th>
+                <th>실점 게임 수 (GA)</th>
+                <th>득실차 (GD)</th>
             </tr>
             {% for standing in league_standings %}
             <tr>
@@ -47,13 +65,13 @@
             {% endfor %}
         </table>
     {% else %}
-        <p>No league matches recorded yet or all matches are unfinished.</p>
+        <p>아직 기록된 리그 매치가 없거나 모든 매치가 미완료 상태입니다.</p>
     {% endif %}
     <hr>
 {% endif %}
 
 
-<h3>Matches Schedule</h3>
+<h3>🗓️ 매치 일정</h3>
 
 {# 3. KNOCKOUT 브래킷 시각화 #}
 {% set max_round_no = 0 %}
@@ -65,7 +83,7 @@
 {% if tournament.type == "KNOCKOUT" and matches %}
     {# ------------------ [KNOCKOUT 브래킷 시각화] ------------------ #}
     <div style="margin-top: 1.5rem;">
-        <h4>Knockout Bracket Visualization</h4>
+        <h4>대회 대진표 시각화</h4>
         
         {% set rounds = matches | groupby('round_no') | list %}
         
@@ -74,9 +92,9 @@
             <div class="bracket-round">
                 <h4>
                     {% if round_no == total_rounds %}
-                        Final
+                        결승
                     {% else %}
-                        Round {{ round_no }}
+                        라운드 {{ round_no }}
                     {% endif %}
                 </h4>
                 
@@ -119,20 +137,20 @@
 {% if matches %}
 <table border="1" cellpadding="4">
     <tr>
-        <th>Stage</th>
-        <th>Round</th>
-        <th>Match</th>
-        <th>Team1</th>
-        <th>Team2</th>
-        <th>Status</th>
-        <th>Score</th>
+        <th>단계</th>
+        <th>라운드</th>
+        <th>매치</th>
+        <th>팀 1</th>
+        <th>팀 2</th>
+        <th>상태</th>
+        <th>점수</th>
     </tr>
     {% for m in matches %}
         <tr>
             <td>{{ m.stage }}</td>
             <td>
                 {% if m.round_no == total_rounds %}
-                    Final
+                    결승
                 {% else %}
                     {{ m.round_no }}
                 {% endif %}
@@ -152,33 +170,33 @@
     {% endfor %}
 </table>
 {% else %}
-<p>No match schedule has been generated yet for this tournament.</p>
+<p>아직 이 대회에 대한 매치 일정이 생성되지 않았습니다.</p>
 {% endif %}
 
 <hr>
 
-{# 5. 토너먼트 팀 목록 #}
-<h3>Teams ({{ teams|length }})</h3>
+{# 5. 대회 팀 목록 #}
+<h3>👥 팀 목록</h3>
 
 {% if teams|length > 0 %}
     {% for team in teams %}
     {% set captain_user = team.captain_user %}
     <div style="margin-bottom: 1rem; border: 1px solid #ccc; padding: 0.5rem;">
-        <h4>Team Name: {{ team.name }} (Captain: {{ captain_user.real_name or captain_user.username if captain_user else 'N/A' }})</h4>
+        <h4>팀 이름: {{ team.name }} (주장: {{ captain_user.real_name or captain_user.username if captain_user else 'N/A' }})</h4>
 
         <p>
-            Team Base Score Sum: {{ team.base_total }} /
-            Team Weighted Score Sum: {{ "%.1f"|format(team.weighted_total) }}
+            팀 실제 점수 합계: {{ team.base_total }} /
+            팀 가중치 점수 합계: {{ "%.1f"|format(team.weighted_total) }}
         </p>
 
         <table border="1" cellpadding="4" class="team-member-list">
             <tr>
-                <th>Name</th>
+                <th>이름</th>
                 <th>Riot ID</th>
-                <th>Assigned Role</th>
-                <th>Primary / Sec1 / Sec2</th>
-                <th>Base Score</th>
-                <th>Weighted Score</th>
+                <th>배정 포지션</th>
+                <th>주 포지션 / 보조 1 / 보조 2</th>
+                <th>실제 점수</th>
+                <th>가중치 점수</th>
             </tr>
             {% for tm in team.members %}
                 {% set u = tm.participant.user %}
@@ -199,7 +217,7 @@
     </div>
     {% endfor %}
 {% else %}
-    <p style="margin-top: 1rem;">No teams have been generated yet for this tournament.</p>
+    <p style="margin-top: 1rem;">아직 이 대회에 대한 팀이 생성되지 않았습니다.</p>
 {% endif %}
 
 {% endblock %}
