@@ -149,7 +149,7 @@
         <tr>
             <td>{{ m.stage }}</td>
             <td>
-                {% if m.round_no == total_rounds %}
+                {% if (tournament.type == 'KNOCKOUT' and m.round_no == total_rounds) or m.stage == 'FINAL' %}
                     결승
                 {% else %}
                     {{ m.round_no }}

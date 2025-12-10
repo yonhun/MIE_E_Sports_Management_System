@@ -193,8 +193,7 @@
         <tr>
             <td>{{ m.stage }}</td>
             <td>
-                {# KNOCKOUT 타입이 아니거나 라운드가 Max round와 같으면 "Final" 표시 #}
-                {% if m.round_no == total_rounds %}
+                {% if (tournament.type == 'KNOCKOUT' and m.round_no == total_rounds) or m.stage == 'FINAL' %}
                     결승
                 {% else %}
                     {{ m.round_no }}
