@@ -11,24 +11,24 @@
         {% if session.get('role') == "USER" %}
             <h4>메뉴</h4>
             <ul>
-                <li><a href="{{ url_for('user_dashboard') }}">🏠 대시보드</a></li>
-                <li><a href="{{ url_for('user_profile') }}">⚙️ 프로필</a></li>
-                <li><a href="{{ url_for('user_tournaments') }}">🏆 대회</a></li> 
+                <li><a href="{{ url_for('user.user_dashboard') }}">🏠 대시보드</a></li>
+                <li><a href="{{ url_for('user.user_profile') }}">⚙️ 프로필</a></li>
+                <li><a href="{{ url_for('user.user_tournaments') }}">🏆 대회</a></li> 
             </ul>
         {% elif session.get('role') == "ADMIN" %}
             <h4>메뉴</h4>
             <ul>
-                <li><a href="{{ url_for('admin_dashboard') }}">🏠 대시보드</a></li>
-                <li><a href="{{ url_for('admin_tournaments') }}">🏆 대회 관리</a></li>
-                <li><a href="{{ url_for('admin_permissions') }}">🔑 권한 관리</a></li>
-                <li><a href="{{ url_for('admin_user_approvals') }}">✅ 회원 가입 관리</a></li>
+                <li><a href="{{ url_for('admin.admin_dashboard') }}">🏠 대시보드</a></li>
+                <li><a href="{{ url_for('admin.admin_tournaments') }}">🏆 대회 관리</a></li>
+                <li><a href="{{ url_for('admin.admin_permissions') }}">🔑 권한 관리</a></li>
+                <li><a href="{{ url_for('admin.admin_user_approvals') }}">✅ 회원 가입 관리</a></li>
             </ul>
         {% endif %}
 
         <hr>
         {% if session.get('user_id') %}
         <ul>
-            <li><a href="{{ url_for('logout') }}" class="logout-link">로그아웃</a></li>
+            <li><a href="{{ url_for('auth.logout') }}" class="logout-link">로그아웃</a></li>
         </ul>
         {% endif %}
     </nav>

@@ -6,16 +6,16 @@
 {% set tid = tournament.id %}
 {% set current_endpoint = request.endpoint %}
 <div class="tournament-nav">
-    <a href="{{ url_for('user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
         대회 신청 정보
     </a>
-    <a href="{{ url_for('user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
         팀 정보
     </a>
-    <a href="{{ url_for('user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
         매치 정보
     </a>
-    <a href="{{ url_for('tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
+    <a href="{{ url_for('tournament.tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
         전체 현황
     </a>
 </div>
@@ -27,7 +27,7 @@
     {% if not my_participant %}
     <p>현재 이 대회에 참가하고 있지 않습니다. "신청" 메뉴를 사용하여 참가해주세요.</p>
     {# 🚨 수정: 대회 목록으로 리다이렉트 #}
-    <p><a href="{{ url_for('user_tournaments') }}">대회 목록으로 이동</a></p>
+    <p><a href="{{ url_for('user.user_tournaments') }}">대회 목록으로 이동</a></p>
     {% elif my_participant.status != "APPROVED" %}
     <p>회원님의 신청 상태는 <strong>{{ my_participant.status }}</strong>입니다. 승인 후 팀에 배정됩니다.</p>
     {% else %}
@@ -53,8 +53,8 @@
             <td>{{ m.stage }}</td>
             <td>{{ m.round_no }}</td>
             <td>{{ m.match_no }}</td>
-            <td><a href="{{ url_for('team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
-            <td><a href="{{ url_for('team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>
+            <td><a href="{{ url_for('team.team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
+            <td><a href="{{ url_for('team.team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>
             <td>{{ m.status }}</td>
             <td>
                 {% if m.status == "DONE" %}
@@ -65,7 +65,7 @@
             </td>
             <td>
                 {% if m.status == "SCHEDULED" %}
-                    <a href="{{ url_for('user_match_report', match_id=m.id) }}">결과 보고</a>
+                    <a href="{{ url_for('user.user_match_report', match_id=m.id) }}">결과 보고</a>
                 {% else %}
                     -
                 {% endif %}

@@ -7,13 +7,13 @@
 {% set tid = tournament.id %}
 {% set current_endpoint = request.endpoint %}
 <div class="tournament-nav">
-    <a href="{{ url_for('admin_tournament', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_tournament' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_tournament', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_tournament' %}current-page{% endif %}">
         설정 / 일정
     </a>
-    <a href="{{ url_for('admin_participants', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_participants' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_participants', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_participants' %}current-page{% endif %}">
         참가자
     </a>
-    <a href="{{ url_for('admin_teams', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_teams' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_teams', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_teams' %}current-page{% endif %}">
         팀 관리
     </a>
 </div>
@@ -31,7 +31,7 @@
 
 {% if pending|length > 0 %}
 {# PENDING 목록은 Bulk Approve 폼 내부에 있어야 합니다. #}
-<form action="{{ url_for('admin_bulk_approve_participants', tournament_id=tournament.id) }}" method="post">
+<form action="{{ url_for('admin.admin_bulk_approve_participants', tournament_id=tournament.id) }}" method="post">
     <table border="1" cellpadding="4">
         <tr>
             <th>신청 번호</th>
@@ -75,14 +75,14 @@
             <td>
                 {# 🚨 수정: tournament_id 전달 #}
                 <button type="submit"
-                        formaction="{{ url_for('admin_approve_participant', tournament_id=tournament.id, participant_id=p.id) }}"
+                        formaction="{{ url_for('admin.admin_approve_participant', tournament_id=tournament.id, participant_id=p.id) }}"
                         formmethod="post">
                     승인
                 </button>
 
                 {# 🚨 수정: tournament_id 전달 #}
                 <button type="submit"
-                        formaction="{{ url_for('admin_reject_participant', tournament_id=tournament.id, participant_id=p.id) }}"
+                        formaction="{{ url_for('admin.admin_reject_participant', tournament_id=tournament.id, participant_id=p.id) }}"
                         formmethod="post">
                     거절
                 </button>
@@ -129,7 +129,7 @@
         </td>
         <td>
             {# 🚨 추가: Actual Score 수정 폼 #}
-            <form action="{{ url_for('admin_update_approved_score', tournament_id=tournament.id, participant_id=p.id) }}" method="post" style="display:inline-flex; align-items:center; gap:5px;">
+            <form action="{{ url_for('admin.admin_update_approved_score', tournament_id=tournament.id, participant_id=p.id) }}" method="post" style="display:inline-flex; align-items:center; gap:5px;">
                 <input type="number" name="actual_score" placeholder="새 점수" value="{{ p.user.actual_score if p.user.actual_score is not none else '' }}" style="width: 80px;">
                 <button type="submit">수정</button>
             </form>

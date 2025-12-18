@@ -5,7 +5,7 @@
 
 {# -------------------- 1. 대회 생성 폼 -------------------- #}
 <h3>➕ 새 대회 생성</h3>
-<form action="{{ url_for('admin_tournaments') }}" method="post">
+<form action="{{ url_for('admin.admin_tournaments') }}" method="post">
     <div>
         <label>이름:
             <input type="text" name="name" required>
@@ -48,9 +48,9 @@
         <td>{{ t.status }}</td>
         <td>
             {# Active 대회의 관리 링크 유지 #}
-            <a href="{{ url_for('admin_tournament', tournament_id=t.id) }}">설정/일정</a> |
-            <a href="{{ url_for('admin_participants', tournament_id=t.id) }}">참가자</a> |
-            <a href="{{ url_for('admin_teams', tournament_id=t.id) }}">팀</a> 
+            <a href="{{ url_for('admin.admin_tournament', tournament_id=t.id) }}">설정/일정</a> |
+            <a href="{{ url_for('admin.admin_participants', tournament_id=t.id) }}">참가자</a> |
+            <a href="{{ url_for('admin.admin_teams', tournament_id=t.id) }}">팀</a> 
         </td>
     </tr>
     {% endfor %}
@@ -80,7 +80,7 @@
         <td><strong class="status-ok">{{ t.status }}</strong></td>
         <td>
             {# 🚨 수정: history 라우트로 변경 #}
-            <a href="{{ url_for('tournament_history', tournament_id=t.id) }}">기록 확인</a>
+            <a href="{{ url_for('tournament.tournament_history', tournament_id=t.id) }}">기록 확인</a>
         </td>
     </tr>
     {% endfor %}

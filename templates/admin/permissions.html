@@ -6,7 +6,7 @@
 {# -------------------- 1. 일반 사용자 목록 (ADMIN 권한 부여 폼) -------------------- #}
 <h3>➕ 관리자 권한 부여</h3>
 
-<form action="{{ url_for('admin_permissions') }}" method="post">
+<form action="{{ url_for('admin.admin_permissions') }}" method="post">
     <label>관리자 권한을 부여할 사용자 선택:
         <select name="user_id">
             {% for u in users %}

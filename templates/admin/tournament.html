@@ -6,13 +6,13 @@
 {% set tid = tournament.id %}
 {% set current_endpoint = request.endpoint %}
 <div class="tournament-nav">
-    <a href="{{ url_for('admin_tournament', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_tournament' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_tournament', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_tournament' %}current-page{% endif %}">
         설정 / 일정
     </a>
-    <a href="{{ url_for('admin_participants', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_participants' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_participants', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_participants' %}current-page{% endif %}">
         참가자
     </a>
-    <a href="{{ url_for('admin_teams', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_teams' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_teams', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_teams' %}current-page{% endif %}">
         팀 관리
     </a>
 </div>
@@ -20,7 +20,7 @@
 
 {# -------------------- 1. 기본 정보 수정 폼 -------------------- #}
 <h3>📝 기본 정보 수정</h3>
-<form action="{{ url_for('admin_tournament', tournament_id=tournament.id) }}" method="post">
+<form action="{{ url_for('admin.admin_tournament', tournament_id=tournament.id) }}" method="post">
     <div>
         <label>대회 이름:
             <input type="text" name="name" value="{{ tournament.name }}" disabled>
@@ -51,7 +51,7 @@
 
 {# -------------------- 2. 매치 생성 및 초기화 -------------------- #}
 <h3>🗓️ 매치 일정 생성</h3>
-<form action="{{ url_for('admin_generate_schedule', tournament_id=tournament.id) }}" method="post" style="margin-top: 1rem;">
+<form action="{{ url_for('admin.admin_generate_schedule', tournament_id=tournament.id) }}" method="post" style="margin-top: 1rem;">
     <p>현재 승인된 팀을 기준으로 대진/일정을 자동 생성합니다. **기존 매치 데이터는 모두 삭제됩니다.**</p>
     {# 🚨 수정: 엔드포인트 이름을 'admin_generate_schedule'로 변경 #}
     <button type="submit">일정 생성</button>
@@ -64,7 +64,7 @@
     <div class="finished-box">
         <h3>🏆 대회 종료!</h3>
         {% if winner_team %}
-            <p style="font-size: 1.2em; font-weight: bold;">우승 팀: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
+            <p style="font-size: 1.2em; font-weight: bold;">우승 팀: <a href="{{ url_for('team.team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
         {% else %}
             <p>우승팀을 결정하거나 기록할 수 없습니다.</p>
         {% endif %}
@@ -92,7 +92,7 @@
             {% for standing in league_standings %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td><a href="{{ url_for('team_detail', team_id=standing.team_id) }}">{{ standing.team_name }}</a></td>
+                <td><a href="{{ url_for('team.team_detail', team_id=standing.team_id) }}">{{ standing.team_name }}</a></td>
                 <td>{{ standing.P }}</td>
                 <td>{{ standing.W }}</td>
                 <td>{{ standing.L }}</td>
@@ -200,8 +200,8 @@
                 {% endif %}
             </td>
             <td>{{ m.match_no }}</td>
-            <td><a href="{{ url_for('team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
-            <td><a href="{{ url_for('team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>
+            <td><a href="{{ url_for('team.team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
+            <td><a href="{{ url_for('team.team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>
             <td>{{ m.status }}</td>
             <td>
                 {% if m.status == "DONE" %}
@@ -211,7 +211,7 @@
                 {% endif %}
             </td>
             <td>
-                <a href="{{ url_for('admin_match_report', match_id=m.id) }}">결과 수정</a>
+                <a href="{{ url_for('admin.admin_match_report', match_id=m.id) }}">결과 수정</a>
             </td>
         </tr>
     {% endfor %}

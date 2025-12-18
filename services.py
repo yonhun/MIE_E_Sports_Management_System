@@ -44,12 +44,12 @@ def get_member_weighted_score(user, assigned_role: str | None) -> float:
     w = get_member_weight(user, assigned_role)
     return base * w
 
-def update_user_riot_ranks(user: User):
+def update_user_riot_ranks(user: User, force_update=False):
     """Riot API를 통해 유저 랭크 정보 갱신 (24시간 쿨타임 적용)"""
     if not user.summoner_riot_id:
         return
 
-    if user.last_rank_update_at and (datetime.now() - user.last_rank_update_at) < timedelta(hours=24):
+    if not force_update and user.last_rank_update_at and (datetime.now() - user.last_rank_update_at) < timedelta(hours=24):
         return
         
     solo_tier, flex_tier, puuid = get_summoner_ranks(user.summoner_riot_id)

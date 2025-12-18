@@ -18,10 +18,10 @@
         <td>{{ u.username }}</td>
         <td>{{ u.role }}</td>
         <td>
-            <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='approve') }}" style="display:inline;">
+            <form method="POST" action="{{ url_for('admin.admin_handle_user_approval', user_id=u.id, action='approve') }}" style="display:inline;">
                 <button type="submit">승인</button>
             </form>
-            <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='reject') }}" style="display:inline;">
+            <form method="POST" action="{{ url_for('admin.admin_handle_user_approval', user_id=u.id, action='reject') }}" style="display:inline;">
                 <button type="submit" class="btn-reject">거절</button> 
             </form>
         </td>
@@ -49,10 +49,10 @@
         <td>{{ u.username }}</td>
         <td>{{ u.role }}</td>
         <td>
-            <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='approve') }}" style="display:inline;">
+            <form method="POST" action="{{ url_for('admin.admin_handle_user_approval', user_id=u.id, action='approve') }}" style="display:inline;">
                 <button type="submit">재승인</button>
             </form>
-            <form method="POST" action="{{ url_for('admin_handle_user_approval', user_id=u.id, action='delete') }}" style="display:inline;">
+            <form method="POST" action="{{ url_for('admin.admin_handle_user_approval', user_id=u.id, action='delete') }}" style="display:inline;">
                 <button type="submit" class="btn-delete">영구 삭제</button>
             </form>
         </td>

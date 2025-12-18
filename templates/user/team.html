@@ -6,16 +6,16 @@
 {% set tid = tournament.id %}
 {% set current_endpoint = request.endpoint %}
 <div class="tournament-nav">
-    <a href="{{ url_for('user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
         대회 신청 정보
     </a>
-    <a href="{{ url_for('user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
         팀 정보
     </a>
-    <a href="{{ url_for('user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
         매치 정보
     </a>
-    <a href="{{ url_for('tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
+    <a href="{{ url_for('tournament.tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
         전체 현황
     </a>
 </div>
@@ -38,7 +38,7 @@
 
     {% if is_captain %}
         {# 🚨 수정: tournament_id 전달 #}
-        <form action="{{ url_for('user_team_rename', tournament_id=tournament.id) }}" method="post" style="margin-bottom: 1rem;">
+        <form action="{{ url_for('user.user_team_rename', tournament_id=tournament.id) }}" method="post" style="margin-bottom: 1rem;">
             <label>팀 이름 변경:
                 <input type="text" name="team_name" value="{{ team.name }}">
             </label>

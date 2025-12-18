@@ -6,23 +6,23 @@
 {% set tid = tournament.id %}
 {% set current_endpoint = request.endpoint %}
 <div class="tournament-nav">
-    <a href="{{ url_for('user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
         대회 신청 정보
     </a>
-    <a href="{{ url_for('user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
         팀 정보
     </a>
-    <a href="{{ url_for('user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
         매치 정보
     </a>
-    <a href="{{ url_for('tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
+    <a href="{{ url_for('tournament.tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
         전체 현황
     </a>
 </div>
 <hr>
 
 {# 🚨 수정: tournaments 목록 대신 현재 tournament 객체를 사용 #}
-<form action="{{ url_for('user_apply', tournament_id=tournament.id) }}" method="post">
+<form action="{{ url_for('user.user_apply', tournament_id=tournament.id) }}" method="post">
     {# 대회 선택 드롭다운은 제거 #}
 
     {% if tournament and tournament.status in ("IN_PROGRESS", "RUNNING", "FINISHED") %}

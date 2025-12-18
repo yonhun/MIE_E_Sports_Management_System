@@ -35,17 +35,17 @@
             </td>
             <td>
                 {% if t.status == "OPEN" or t.my_participant %}
-                    <a href="{{ url_for('user_apply', tournament_id=t.id) }}">대회 정보 확인</a>
+                    <a href="{{ url_for('user.user_apply', tournament_id=t.id) }}">대회 정보 확인</a>
                 {% endif %}
                 
                 {% if t.my_participant and t.my_participant.status == "APPROVED" %}
-                    | <a href="{{ url_for('user_team', tournament_id=t.id) }}">팀</a>
-                    | <a href="{{ url_for('user_matches', tournament_id=t.id) }}">매치</a>
+                    | <a href="{{ url_for('user.user_team', tournament_id=t.id) }}">팀</a>
+                    | <a href="{{ url_for('user.user_matches', tournament_id=t.id) }}">매치</a>
                 {% endif %}
                 
                 {% if t.status != "OPEN" %}
                     {# 🚨 수정: history 라우트로 변경 #}
-                    | <a href="{{ url_for('tournament_history', tournament_id=t.id) }}">전체 현황</a>
+                    | <a href="{{ url_for('tournament.tournament_history', tournament_id=t.id) }}">전체 현황</a>
                 {% endif %}
             </td>
         </tr>
@@ -76,7 +76,7 @@
             <td><strong class="status-ok">{{ t.status }}</strong></td>
             <td>
                 {# 🚨 수정: history 라우트로 변경 #}
-                <a href="{{ url_for('tournament_history', tournament_id=t.id) }}">기록 확인</a>
+                <a href="{{ url_for('tournament.tournament_history', tournament_id=t.id) }}">기록 확인</a>
             </td>
         </tr>
         {% endfor %}

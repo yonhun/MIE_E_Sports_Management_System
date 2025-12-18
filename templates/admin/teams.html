@@ -6,19 +6,19 @@
 {% set tid = tournament.id %}
 {% set current_endpoint = request.endpoint %}
 <div class="tournament-nav">
-    <a href="{{ url_for('admin_tournament', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_tournament' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_tournament', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_tournament' %}current-page{% endif %}">
         설정 / 일정
     </a>
-    <a href="{{ url_for('admin_participants', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_participants' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_participants', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_participants' %}current-page{% endif %}">
         참가자
     </a>
-    <a href="{{ url_for('admin_teams', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_teams' %}current-page{% endif %}">
+    <a href="{{ url_for('admin.admin_teams', tournament_id=tid) }}" class="{% if current_endpoint == 'admin_teams' %}current-page{% endif %}">
         팀 관리
     </a>
 </div>
 <hr>
 
-<form action="{{ url_for('admin_auto_generate_teams', tournament_id=tournament.id) }}" method="post" style="margin-bottom: 1rem;">
+<form action="{{ url_for('admin.admin_auto_generate_teams', tournament_id=tournament.id) }}" method="post" style="margin-bottom: 1rem;">
     <p>팀 자동 생성을 실행하면 현재 팀 구성과 팀명, 그리고 **모든 매치 일정이 초기화됩니다.**</p>
     <button type="submit">팀 자동 생성</button>
 </form>
@@ -31,7 +31,7 @@
     {# 폼을 각 팀 섹션 안으로 이동 #}
     {% for team in teams %}
     {# 🚨 수정: tournament_id 전달 #}
-    <form action="{{ url_for('admin_teams', tournament_id=tournament.id) }}" method="post">
+    <form action="{{ url_for('admin.admin_teams', tournament_id=tournament.id) }}" method="post">
 
         {% for tm in team.members %}
             {% set u = tm.participant.user %}

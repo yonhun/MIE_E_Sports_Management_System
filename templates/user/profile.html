@@ -2,7 +2,7 @@
 {% block content %}
 <h2>⚙️ 프로필</h2>
 
-<form action="{{ url_for('user_profile') }}" method="post">
+<form action="{{ url_for('user.user_profile') }}" method="post">
     <div>
         <label>학번:
             <input type="text" name="student_id" value="{{ user.student_id or '' }}">

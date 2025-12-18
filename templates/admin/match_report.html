@@ -4,7 +4,7 @@
 
 <p>{{ match.stage }} 라운드 {{ match.round_no }} - {{ match.team1.name }} vs {{ match.team2.name }}</p>
 
-<form action="{{ url_for('admin_match_report', match_id=match.id) }}" method="post">
+<form action="{{ url_for('admin.admin_match_report', match_id=match.id) }}" method="post">
     <label>{{ match.team1.name }} 점수:
         <input type="number" name="team1_score" value="{{ match.team1_score or 0 }}">
     </label>

@@ -7,16 +7,16 @@
 {% set current_endpoint = request.endpoint %}
 {% if session.get('role') == 'USER' and tournament.status != 'FINISHED' %}
 <div class="tournament-nav">
-    <a href="{{ url_for('user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_apply', tournament_id=tid) }}" class="{% if current_endpoint == 'user_apply' %}current-page{% endif %}">
         대회 신청 정보
     </a>
-    <a href="{{ url_for('user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_team', tournament_id=tid) }}" class="{% if current_endpoint == 'user_team' %}current-page{% endif %}">
         팀 정보
     </a>
-    <a href="{{ url_for('user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
+    <a href="{{ url_for('user.user_matches', tournament_id=tid) }}" class="{% if current_endpoint == 'user_matches' %}current-page{% endif %}">
         매치 정보
     </a>
-    <a href="{{ url_for('tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
+    <a href="{{ url_for('tournament.tournament_history', tournament_id=tid) }}" class="{% if current_endpoint == 'tournament_history' %}current-page{% endif %}">
         전체 현황
     </a>
 </div>
@@ -27,7 +27,7 @@
     <div class="finished-box">
         <h3>🏆 대회 종료!</h3>
         {% if winner_team %}
-            <p style="font-size: 1.2em; font-weight: bold;">우승 팀: <a href="{{ url_for('team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
+            <p style="font-size: 1.2em; font-weight: bold;">우승 팀: <a href="{{ url_for('team.team_detail', team_id=winner_team.id) }}">{{ winner_team.name }}</a></p>
         {% else %}
             <p>우승팀을 결정하거나 기록할 수 없습니다.</p>
         {% endif %}
@@ -54,7 +54,7 @@
             {% for standing in league_standings %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td><a href="{{ url_for('team_detail', team_id=standing.team_id) }}">{{ standing.team_name }}</a></td>
+                <td><a href="{{ url_for('team.team_detail', team_id=standing.team_id) }}">{{ standing.team_name }}</a></td>
                 <td>{{ standing.P }}</td>
                 <td>{{ standing.W }}</td>
                 <td>{{ standing.L }}</td>
@@ -156,8 +156,8 @@
                 {% endif %}
             </td>
             <td>{{ m.match_no }}</td>
-            <td><a href="{{ url_for('team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
-            <td><a href="{{ url_for('team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>
+            <td><a href="{{ url_for('team.team_detail', team_id=m.team1_id) }}">{{ m.team1.name }}</a></td>
+            <td><a href="{{ url_for('team.team_detail', team_id=m.team2_id) }}">{{ m.team2.name }}</a></td>
             <td>{{ m.status }}</td>
             <td>
                 {% if m.status == "DONE" %}

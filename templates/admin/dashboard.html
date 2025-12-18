@@ -25,7 +25,7 @@
                 {{ pending_users_count or "0" }}
             </strong>
         </td>
-        <td><a href="{{ url_for('admin_user_approvals') }}">계정 승인</a></td>
+        <td><a href="{{ url_for('admin.admin_user_approvals') }}">계정 승인</a></td>
     </tr>
 </table>
 
@@ -52,17 +52,17 @@
                 <tr>
                     <td>총 신청자 수</td>
                     <td>{{ t.total_applications }}</td>
-                    <td><a href="{{ url_for('admin_participants', tournament_id=t.id) }}">참가자 관리</a></td>
+                    <td><a href="{{ url_for('admin.admin_participants', tournament_id=t.id) }}">참가자 관리</a></td>
                 </tr>
                 <tr>
                     <td>승인된 참가자 수</td>
                     <td><strong>{{ t.approved }}</strong></td>
-                    <td><a href="{{ url_for('admin_participants', tournament_id=t.id) }}">점수 수정</a></td>
+                    <td><a href="{{ url_for('admin.admin_participants', tournament_id=t.id) }}">점수 수정</a></td>
                 </tr>
                 <tr>
                     <td>결성된 팀 수</td>
                     <td>{{ t.total_teams_count or "-" }}</td>
-                    <td><a href="{{ url_for('admin_teams', tournament_id=t.id) }}">팀 관리</a></td>
+                    <td><a href="{{ url_for('admin.admin_teams', tournament_id=t.id) }}">팀 관리</a></td>
                 </tr>
                 <tr>
                     <td>대기 중인 매치 수</td>
@@ -73,7 +73,7 @@
                             {{ t.pending_matches_count or "-" }}
                         </strong>
                     </td>
-                    <td><a href="{{ url_for('admin_tournament', tournament_id=t.id) }}">일정 보기</a></td>
+                    <td><a href="{{ url_for('admin.admin_tournament', tournament_id=t.id) }}">일정 보기</a></td>
                 </tr>
             </table>
         </div>
@@ -82,7 +82,7 @@
     <div class="access-box" style="margin-top: 10px;">
         <p style="margin-bottom: 1rem;">현재 진행 중이거나 신청 가능한 대회가 없습니다.</p>
         <p>
-            <a href="{{ url_for('admin_tournaments') }}" class="btn-primary-access">
+            <a href="{{ url_for('admin.admin_tournaments') }}" class="btn-primary-access">
                 대회 관리 페이지로 이동
             </a>
         </p>
