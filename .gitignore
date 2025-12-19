@@ -16,3 +16,7 @@ __pycache__/
 
 # 맥 사용시 생기는 쓰레기 파일
 .DS_Store
+
+# 테스트용 파일 무시
+seed_users.py
+users.csv
